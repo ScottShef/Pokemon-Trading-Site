@@ -29,14 +29,45 @@ export default function Marketplace() {
       .catch((err) => console.error(err));
   }, []);
 
+  // Navigation handlers
+  const handleRegisterClick = () => {
+    window.location.href = "/register";
+  };
+
+  const handleLoginClick = () => {
+    window.location.href = "/login";
+  };
+
   return (
-    <main className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Pokémon Marketplace</h1>
+    <main className="p-6 min-h-screen" style={{ backgroundColor: "#343541", color: "#ECECF1" }}>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Trainer Exchange</h1>
+
+        {/* Register and Login Buttons */}
+        <div>
+          <button
+            onClick={handleRegisterClick}
+            className="mr-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Register
+          </button>
+          <button
+            onClick={handleLoginClick}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+          >
+            Login
+          </button>
+        </div>
+      </div>
+
+      {/* Listings Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {listings.map((listing) => (
           <div
             key={listing._id}
-            className="p-4 bg-white rounded-xl shadow hover:shadow-lg transition"
+            className="p-4 rounded-xl shadow hover:shadow-lg transition"
+            style={{ backgroundColor: "#444654" }}
           >
             <img
               src={listing.imageUrl}
@@ -44,7 +75,7 @@ export default function Marketplace() {
               className="rounded-md w-full h-48 object-cover"
             />
             <h2 className="text-lg font-semibold mt-2">{listing.title}</h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-300">
               {listing.condition}
               {listing.graded
                 ? ` • ${listing.gradingCompany} ${listing.grade}`
@@ -52,7 +83,7 @@ export default function Marketplace() {
             </p>
             <p className="font-bold mt-1">${listing.price}</p>
             {listing.owner && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-400">
                 Seller: {listing.owner.username}
               </p>
             )}

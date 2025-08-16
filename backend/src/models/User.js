@@ -1,42 +1,32 @@
-const mongoose = require("mongoose");  // MongoDB object modeling library
-const bcrypt = require("bcryptjs");    // Library for hashing passwords
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
-// ========================
-// Define User Schema
-// ========================
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true }, // Unique username
-  email: { type: String, required: true, unique: true },    // Unique email
-  password: { type: String, required: true },               // Hashed password
-  createdAt: { type: Date, default: Date.now }              // Timestamp of creation
+// Define the User schema
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true },
+}, { timestamps: true });
+
+// Hash password before saving
+UserSchema.pre("save", async function (next) {
+  const user = this;
+
+  // Only hash if password is new or modified
+  if (!user.isModified("password")) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(user.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
-// ========================
-// Pre-save Hook: Hash Password
-// ========================
-// Runs automatically before saving a new user
-userSchema.pre("save", async function (next) {
-  // Only hash password if it is new or has been modified
-  if (!this.isModified("password")) return next();
-
-  // Generate a salt (complexity 10) and hash the password
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-
-  next(); // Continue saving
-});
-
-// ========================
-// Method to Compare Passwords
-// ========================
-// Allows checking a plain password against the hashed password in DB
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+// Method to compare plain password with hashed password
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// ========================
-// Export Model
-// ========================
-// Third parameter explicitly sets the collection name to "users"
-// This prevents Mongoose from using default collection names like "userss" or "userModels"
-module.exports = mongoose.model("User", userSchema, "users");
+module.exports = mongoose.model("User", UserSchema);

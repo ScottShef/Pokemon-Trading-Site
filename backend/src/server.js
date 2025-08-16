@@ -1,22 +1,26 @@
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
-import dotenv from "dotenv";
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const authRoutes = require("./routes/auth");
+const authMiddleware = require("./middleware/auth");
 
 dotenv.config();
-const app = express();
-app.use(express.json());
-app.use(cors());
 
-// DB connection
+const app = express();
+app.use(express.json()); // Parse JSON request bodies
+
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error(err));
+  .catch(err => console.error("MongoDB connection error:", err));
 
-// Routes
-import authRoutes from "./routes/auth.js";
-import listingRoutes from "./routes/listing.js";
+// Use auth routes
 app.use("/api/auth", authRoutes);
-app.use("/api/listings", listingRoutes);
 
+// Example protected route
+app.get("/api/protected", authMiddleware, (req, res) => {
+  res.json({ message: "This route is protected!", userId: req.userId });
+});
+
+// Start server
 app.listen(5000, () => console.log("Server running on port 5000"));

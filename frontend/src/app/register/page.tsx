@@ -1,122 +1,159 @@
-"use client"; // Enables client-side React code in Next.js app router
+"use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, ChangeEvent } from "react";
 import axios from "axios";
 
-// Define the shape of our registration form
 interface RegisterForm {
   username: string;
   email: string;
   password: string;
+  confirmPassword: string;
+}
+
+interface ValidationErrors {
+  username?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
 }
 
 export default function RegisterPage() {
-  // State to store form input values
   const [form, setForm] = useState<RegisterForm>({
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
-  // State to display error or success messages
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [message, setMessage] = useState("");
 
-  // Handle input changes and update form state
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  // Validate fields in real-time
+  const validateField = (name: string, value: string) => {
+    let error = "";
+    switch (name) {
+      case "username":
+        if (!value.trim()) error = "Username is required";
+        break;
+      case "email":
+        if (!value.trim()) error = "Email is required";
+        else if (!/^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/.test(value))
+          error = "Invalid email format";
+        break;
+      case "password":
+        if (!value) error = "Password is required";
+        else if (value.length < 6) error = "Password must be at least 6 characters";
+        break;
+      case "confirmPassword":
+        if (!value) error = "Please confirm your password";
+        else if (value !== form.password) error = "Passwords do not match";
+        break;
+    }
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  // Handle form submission
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    validateField(name, value);
+  };
+
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); // Prevent page reload
-    setError("");       // Clear previous errors
-    setSuccess("");     // Clear previous success messages
+    e.preventDefault();
+    setMessage("");
+
+    // Final validation
+    Object.entries(form).forEach(([name, value]) => validateField(name, value));
+    if (Object.values(errors).some((err) => err)) return;
 
     try {
-      // Send POST request to backend API
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/register",
-        form
-      );
+      const res = await axios.post("http://localhost:5000/api/auth/register", {
+        username: form.username,
+        email: form.email,
+        password: form.password,
+      });
 
-      // Display success message returned from backend
-      setSuccess(res.data.message);
-
-      // Clear the form inputs after successful registration
-      setForm({ username: "", email: "", password: "" });
+      setMessage(res.data.message || "Registered successfully!");
+      setForm({ username: "", email: "", password: "", confirmPassword: "" });
+      setErrors({});
     } catch (err: any) {
-      // Display error returned from backend or a default message
-      setError(err.response?.data?.error || "Something went wrong");
+      // Show exact backend error for debugging
+      setMessage(err.response?.data?.error || "Something went wrong");
+      console.error("Backend error:", err.response?.data);
     }
   };
 
   return (
-    <main className="flex justify-center items-center h-screen bg-gray-100">
-      {/* Form container */}
-      <form
-        onSubmit={handleSubmit} // Handle form submission
-        className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
-      >
-        {/* Page title */}
-        <h1 className="text-2xl font-bold mb-4 text-center">
-          Create Account
-        </h1>
+    <div style={{ maxWidth: "400px", margin: "50px auto", padding: "20px", border: "1px solid #ccc" }}>
+      <h1 style={{ textAlign: "center" }}>Create Account</h1>
 
-        {/* Display messages */}
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-        {success && <p className="text-green-500 mb-2">{success}</p>}
+      {message && <p style={{ color: message.includes("success") ? "green" : "red", textAlign: "center" }}>{message}</p>}
 
-        {/* Username input with label */}
-        <label className="block mb-4">
-          <span className="font-semibold">Username:</span>
+      <form onSubmit={handleSubmit}>
+        {/* Username */}
+        <div style={{ marginBottom: "15px" }}>
+          <label htmlFor="username" style={{ fontWeight: "bold", display: "block" }}>Username:</label>
           <input
             type="text"
             name="username"
-            value={form.username}        // Controlled input
-            onChange={handleChange}     // Update state as user types
-            required                     // HTML5 required validation
-            className="mt-1 w-full p-2 border rounded"
+            id="username"
+            value={form.username}
+            onChange={handleChange}
+            style={{ width: "100%", padding: "8px" }}
             placeholder="Enter your username"
           />
-        </label>
+          {errors.username && <p style={{ color: "red", fontSize: "12px" }}>{errors.username}</p>}
+        </div>
 
-        {/* Email input with label */}
-        <label className="block mb-4">
-          <span className="font-semibold">Email:</span>
+        {/* Email */}
+        <div style={{ marginBottom: "15px" }}>
+          <label htmlFor="email" style={{ fontWeight: "bold", display: "block" }}>Email:</label>
           <input
             type="email"
             name="email"
+            id="email"
             value={form.email}
             onChange={handleChange}
-            required
-            className="mt-1 w-full p-2 border rounded"
+            style={{ width: "100%", padding: "8px" }}
             placeholder="Enter your email"
           />
-        </label>
+          {errors.email && <p style={{ color: "red", fontSize: "12px" }}>{errors.email}</p>}
+        </div>
 
-        {/* Password input with label */}
-        <label className="block mb-6">
-          <span className="font-semibold">Password:</span>
+        {/* Password */}
+        <div style={{ marginBottom: "15px" }}>
+          <label htmlFor="password" style={{ fontWeight: "bold", display: "block" }}>Password:</label>
           <input
             type="password"
             name="password"
+            id="password"
             value={form.password}
             onChange={handleChange}
-            required
-            className="mt-1 w-full p-2 border rounded"
+            style={{ width: "100%", padding: "8px" }}
             placeholder="Enter your password"
           />
-        </label>
+          {errors.password && <p style={{ color: "red", fontSize: "12px" }}>{errors.password}</p>}
+        </div>
 
-        {/* Submit button */}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-        >
+        {/* Confirm Password */}
+        <div style={{ marginBottom: "15px" }}>
+          <label htmlFor="confirmPassword" style={{ fontWeight: "bold", display: "block" }}>Confirm Password:</label>
+          <input
+            type="password"
+            name="confirmPassword"
+            id="confirmPassword"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            style={{ width: "100%", padding: "8px" }}
+            placeholder="Re-enter your password"
+          />
+          {errors.confirmPassword && <p style={{ color: "red", fontSize: "12px" }}>{errors.confirmPassword}</p>}
+        </div>
+
+        <button type="submit" style={{ width: "100%", padding: "10px", fontWeight: "bold", backgroundColor: "#0070f3", color: "#fff", border: "none" }}>
           Register
         </button>
       </form>
-    </main>
+    </div>
   );
 }

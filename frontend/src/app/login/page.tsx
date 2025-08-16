@@ -3,9 +3,10 @@
 import { useState, FormEvent, ChangeEvent } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 
 interface LoginForm {
-  identifier: string; // username or email
+  identifier: string;
   password: string;
 }
 
@@ -15,15 +16,12 @@ interface ValidationErrors {
 }
 
 export default function LoginPage() {
-  const [form, setForm] = useState<LoginForm>({
-    identifier: "",
-    password: "",
-  });
+  const [form, setForm] = useState<LoginForm>({ identifier: "", password: "" });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [message, setMessage] = useState("");
-  const router = useRouter(); // Next.js router
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
-  // Validate fields in real-time
   const validateField = (name: string, value: string) => {
     let error = "";
     if (name === "identifier" && !value.trim()) error = "Username or Email is required";
@@ -40,8 +38,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setMessage("");
-
-    // Final validation
     Object.entries(form).forEach(([name, value]) => validateField(name, value));
     if (Object.values(errors).some((err) => err)) return;
 
@@ -54,10 +50,7 @@ export default function LoginPage() {
       setMessage(res.data.message || "Login successful!");
       setForm({ identifier: "", password: "" });
       setErrors({});
-
-      // Redirect to homepage after successful login
       router.push("/");
-
     } catch (err: any) {
       setMessage(err.response?.data?.error || "Something went wrong");
       console.error("Backend error:", err.response?.data);
@@ -86,9 +79,7 @@ export default function LoginPage() {
           boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
         }}
       >
-        <h1 style={{ textAlign: "center", fontSize: "2xl", marginBottom: "20px" }}>
-          Login
-        </h1>
+        <h1 style={{ textAlign: "center", fontSize: "2xl", marginBottom: "20px" }}>Login</h1>
 
         {message && (
           <p
@@ -128,12 +119,12 @@ export default function LoginPage() {
           </div>
 
           {/* Password */}
-          <div style={{ marginBottom: "20px" }}>
+          <div style={{ position: "relative", marginBottom: "20px" }}>
             <label htmlFor="password" style={{ fontWeight: "bold", display: "block" }}>
               Password:
             </label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               id="password"
               value={form.password}
@@ -141,13 +132,32 @@ export default function LoginPage() {
               placeholder="Enter your password"
               style={{
                 width: "100%",
-                padding: "10px",
+                padding: "10px 40px 10px 10px",
                 borderRadius: "6px",
                 border: "none",
                 backgroundColor: "#5a5c6c",
                 color: "#ECECF1",
               }}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "#10b981",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {showPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+            </button>
             {errors.password && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.password}</p>}
           </div>
 
@@ -166,6 +176,36 @@ export default function LoginPage() {
           >
             Login
           </button>
+
+          {/* Back to Home */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginTop: "10px",
+              fontWeight: "bold",
+              backgroundColor: "#6b7280",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            &larr; Back to Home
+          </button>
+
+          {/* Don’t have account */}
+          <p style={{ marginTop: "10px", textAlign: "center" }}>
+            Don’t have an account?{" "}
+            <span
+              onClick={() => router.push("/register")}
+              style={{ color: "#10b981", cursor: "pointer", fontWeight: "bold" }}
+            >
+              Register
+            </span>
+          </p>
         </form>
       </div>
     </div>

@@ -2,6 +2,8 @@
 
 import { useState, FormEvent, ChangeEvent } from "react";
 import axios from "axios";
+import { useRouter } from "next/navigation";
+import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 
 interface RegisterForm {
   username: string;
@@ -24,11 +26,12 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   });
-
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [message, setMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const router = useRouter();
 
-  // Validate fields in real-time
   const validateField = (name: string, value: string) => {
     let error = "";
     switch (name) {
@@ -61,8 +64,6 @@ export default function RegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setMessage("");
-
-    // Final validation
     Object.entries(form).forEach(([name, value]) => validateField(name, value));
     if (Object.values(errors).some((err) => err)) return;
 
@@ -76,6 +77,7 @@ export default function RegisterPage() {
       setMessage(res.data.message || "Registered successfully!");
       setForm({ username: "", email: "", password: "", confirmPassword: "" });
       setErrors({});
+      router.push("/login");
     } catch (err: any) {
       setMessage(err.response?.data?.error || "Something went wrong");
       console.error("Backend error:", err.response?.data);
@@ -104,9 +106,7 @@ export default function RegisterPage() {
           boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
         }}
       >
-        <h1 style={{ textAlign: "center", fontSize: "2xl", marginBottom: "20px" }}>
-          Create Account
-        </h1>
+        <h1 style={{ textAlign: "center", fontSize: "2xl", marginBottom: "20px" }}>Create Account</h1>
 
         {message && (
           <p
@@ -123,9 +123,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit}>
           {/* Username */}
           <div style={{ marginBottom: "15px" }}>
-            <label htmlFor="username" style={{ fontWeight: "bold", display: "block" }}>
-              Username:
-            </label>
+            <label htmlFor="username" style={{ fontWeight: "bold", display: "block" }}>Username:</label>
             <input
               type="text"
               name="username"
@@ -147,9 +145,7 @@ export default function RegisterPage() {
 
           {/* Email */}
           <div style={{ marginBottom: "15px" }}>
-            <label htmlFor="email" style={{ fontWeight: "bold", display: "block" }}>
-              Email:
-            </label>
+            <label htmlFor="email" style={{ fontWeight: "bold", display: "block" }}>Email:</label>
             <input
               type="email"
               name="email"
@@ -170,12 +166,10 @@ export default function RegisterPage() {
           </div>
 
           {/* Password */}
-          <div style={{ marginBottom: "15px" }}>
-            <label htmlFor="password" style={{ fontWeight: "bold", display: "block" }}>
-              Password:
-            </label>
+          <div style={{ position: "relative", marginBottom: "15px" }}>
+            <label htmlFor="password" style={{ fontWeight: "bold", display: "block" }}>Password:</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               id="password"
               value={form.password}
@@ -183,23 +177,37 @@ export default function RegisterPage() {
               placeholder="Enter your password"
               style={{
                 width: "100%",
-                padding: "10px",
+                padding: "10px 40px 10px 10px",
                 borderRadius: "6px",
                 border: "none",
                 backgroundColor: "#5a5c6c",
                 color: "#ECECF1",
               }}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "#10b981",
+                cursor: "pointer",
+              }}
+            >
+              {showPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+            </button>
             {errors.password && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.password}</p>}
           </div>
 
           {/* Confirm Password */}
-          <div style={{ marginBottom: "20px" }}>
-            <label htmlFor="confirmPassword" style={{ fontWeight: "bold", display: "block" }}>
-              Confirm Password:
-            </label>
+          <div style={{ position: "relative", marginBottom: "20px" }}>
+            <label htmlFor="confirmPassword" style={{ fontWeight: "bold", display: "block" }}>Confirm Password:</label>
             <input
-              type="password"
+              type={showConfirm ? "text" : "password"}
               name="confirmPassword"
               id="confirmPassword"
               value={form.confirmPassword}
@@ -207,13 +215,29 @@ export default function RegisterPage() {
               placeholder="Re-enter your password"
               style={{
                 width: "100%",
-                padding: "10px",
+                padding: "10px 40px 10px 10px",
                 borderRadius: "6px",
                 border: "none",
                 backgroundColor: "#5a5c6c",
                 color: "#ECECF1",
               }}
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirm(!showConfirm)}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "#10b981",
+                cursor: "pointer",
+              }}
+            >
+              {showConfirm ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+            </button>
             {errors.confirmPassword && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.confirmPassword}</p>}
           </div>
 
@@ -232,6 +256,36 @@ export default function RegisterPage() {
           >
             Register
           </button>
+
+          {/* Back to Home */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginTop: "10px",
+              fontWeight: "bold",
+              backgroundColor: "#6b7280",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            &larr; Back to Home
+          </button>
+
+          {/* Already have account */}
+          <p style={{ marginTop: "10px", textAlign: "center" }}>
+            Already have an account?{" "}
+            <span
+              onClick={() => router.push("/login")}
+              style={{ color: "#10b981", cursor: "pointer", fontWeight: "bold" }}
+            >
+              Login
+            </span>
+          </p>
         </form>
       </div>
     </div>

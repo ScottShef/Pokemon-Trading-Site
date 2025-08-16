@@ -38,17 +38,21 @@ export default function Marketplace() {
     window.location.href = "/login";
   };
 
+  const handleProfileClick = () => {
+    window.location.href = "/profile";
+  };
+
   return (
     <main className="p-6 min-h-screen" style={{ backgroundColor: "#343541", color: "#ECECF1" }}>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Trainer Exchange</h1>
 
-        {/* Register and Login Buttons */}
-        <div>
+        {/* Register, Login, and Profile Buttons */}
+        <div className="flex space-x-2">
           <button
             onClick={handleRegisterClick}
-            className="mr-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
           >
             Register
           </button>
@@ -57,6 +61,12 @@ export default function Marketplace() {
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
           >
             Login
+          </button>
+          <button
+            onClick={handleProfileClick}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+          >
+            Profile / Settings
           </button>
         </div>
       </div>

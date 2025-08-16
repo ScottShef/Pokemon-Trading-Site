@@ -1,9 +1,9 @@
-"use client"; // Required for Next.js app router to use client-side React
+"use client"; // Enables client-side React code in Next.js app router
 
 import { useState, FormEvent } from "react";
-import axios from "axios"; // HTTP client to make requests to backend
+import axios from "axios";
 
-// Define the shape of the registration form data
+// Define the shape of our registration form
 interface RegisterForm {
   username: string;
   email: string;
@@ -11,7 +11,7 @@ interface RegisterForm {
 }
 
 export default function RegisterPage() {
-  // React state to hold form inputs
+  // State to store form input values
   const [form, setForm] = useState<RegisterForm>({
     username: "",
     email: "",
@@ -22,61 +22,68 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Update form state when user types
+  // Handle input changes and update form state
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   // Handle form submission
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault(); // Prevent page refresh
-    setError("");        // Reset error messages
-    setSuccess("");      // Reset success messages
+    e.preventDefault(); // Prevent page reload
+    setError("");       // Clear previous errors
+    setSuccess("");     // Clear previous success messages
 
     try {
-      // Send POST request to backend register route
-      const res = await axios.post("http://localhost:5000/api/auth/register", form);
+      // Send POST request to backend API
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        form
+      );
 
-      // Show success message from backend
+      // Display success message returned from backend
       setSuccess(res.data.message);
 
-      // Clear form after successful registration
+      // Clear the form inputs after successful registration
       setForm({ username: "", email: "", password: "" });
     } catch (err: any) {
-      // Show error returned from backend or generic error
+      // Display error returned from backend or a default message
       setError(err.response?.data?.error || "Something went wrong");
     }
   };
 
   return (
     <main className="flex justify-center items-center h-screen bg-gray-100">
+      {/* Form container */}
       <form
-        onSubmit={handleSubmit} // Connect form submit to handleSubmit function
+        onSubmit={handleSubmit} // Handle form submission
         className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
       >
         {/* Page title */}
-        <h1 className="text-2xl font-bold mb-4 text-center">Create Account</h1>
+        <h1 className="text-2xl font-bold mb-4 text-center">
+          Create Account
+        </h1>
 
-        {/* Display error or success messages */}
+        {/* Display messages */}
         {error && <p className="text-red-500 mb-2">{error}</p>}
         {success && <p className="text-green-500 mb-2">{success}</p>}
 
-        {/* Username input */}
-        <label className="block mb-2">
-          Username
+        {/* Username input with label */}
+        <label className="block mb-4">
+          <span className="font-semibold">Username:</span>
           <input
             type="text"
             name="username"
-            value={form.username}
-            onChange={handleChange} // Update state on change
-            required
+            value={form.username}        // Controlled input
+            onChange={handleChange}     // Update state as user types
+            required                     // HTML5 required validation
             className="mt-1 w-full p-2 border rounded"
+            placeholder="Enter your username"
           />
         </label>
 
-        {/* Email input */}
-        <label className="block mb-2">
-          Email
+        {/* Email input with label */}
+        <label className="block mb-4">
+          <span className="font-semibold">Email:</span>
           <input
             type="email"
             name="email"
@@ -84,12 +91,13 @@ export default function RegisterPage() {
             onChange={handleChange}
             required
             className="mt-1 w-full p-2 border rounded"
+            placeholder="Enter your email"
           />
         </label>
 
-        {/* Password input */}
-        <label className="block mb-4">
-          Password
+        {/* Password input with label */}
+        <label className="block mb-6">
+          <span className="font-semibold">Password:</span>
           <input
             type="password"
             name="password"
@@ -97,6 +105,7 @@ export default function RegisterPage() {
             onChange={handleChange}
             required
             className="mt-1 w-full p-2 border rounded"
+            placeholder="Enter your password"
           />
         </label>
 

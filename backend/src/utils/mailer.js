@@ -21,7 +21,7 @@ async function sendConfirmationEmail(to, username) {
            <p>- Pokemon Trading Team</p>`,
   });
 
-  console.log("Email sent:", info.messageId);
+  //console.log("Email sent:", info.messageId);
 }
 
 module.exports = { sendConfirmationEmail };

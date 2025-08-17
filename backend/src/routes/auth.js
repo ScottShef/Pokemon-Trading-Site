@@ -44,19 +44,44 @@ router.post("/register", async (req, res) => {
 // LOGIN ROUTE
 // -------------------
 router.post("/login", async (req, res) => {
-  const { usernameOrEmail, password } = req.body;
+  console.log("Incoming request headers:", req.headers);
+  console.log("Incoming request body:", req.body);
+
+  const { identifier, password } = req.body;
+
+  // Step 1: Check for missing fields
+  if (!identifier || !password) {
+    console.log("Missing identifier or password");
+    return res.status(400).json({ error: "Missing credentials" });
+  }
+
+  console.log("Login attempt:", { identifier, password });
 
   try {
-    // Allow login via email or username
+    // Step 2: Find user by email or username (both case-insensitive)
     const user = await User.findOne({
-      $or: [{ email: usernameOrEmail }, { username: usernameOrEmail }],
+      $or: [
+        { email: { $regex: `^${identifier}$`, $options: "i" } },      // email case-insensitive
+        { username: { $regex: `^${identifier}$`, $options: "i" } }   // username case-insensitive
+      ]
     });
+
+    console.log("Found user:", user);
+
     if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
+    // Step 3: Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match:", isMatch);
+
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    // Step 4: Generate JWT
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     res.json({
       message: "Login successful",
@@ -64,7 +89,7 @@ router.post("/login", async (req, res) => {
       user: { id: user._id, username: user.username, email: user.email },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Login error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

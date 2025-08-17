@@ -21,12 +21,18 @@ interface Listing {
 
 export default function Marketplace() {
   const [listings, setListings] = useState<Listing[]>([]);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch listings
     axios
       .get<Listing[]>("http://localhost:5000/api/listings")
       .then((res) => setListings(res.data))
       .catch((err) => console.error(err));
+
+    // Check if user is logged in
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername) setUsername(storedUsername);
   }, []);
 
   // Navigation handlers
@@ -42,32 +48,54 @@ export default function Marketplace() {
     window.location.href = "/profile";
   };
 
+  const handleSignOut = () => {
+    localStorage.removeItem("username");
+    setUsername(null);
+    window.location.reload();
+  };
+
   return (
     <main className="p-6 min-h-screen" style={{ backgroundColor: "#343541", color: "#ECECF1" }}>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Trainer Exchange</h1>
 
-        {/* Register, Login, and Profile Buttons */}
+        {/* User Buttons */}
         <div className="flex space-x-2">
-          <button
-            onClick={handleRegisterClick}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Register
-          </button>
-          <button
-            onClick={handleLoginClick}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-          >
-            Login
-          </button>
-          <button
-            onClick={handleProfileClick}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-          >
-            Profile / Settings
-          </button>
+          {!username ? (
+            <>
+              <button
+                onClick={handleRegisterClick}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              >
+                Register
+              </button>
+              <button
+                onClick={handleLoginClick}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+              >
+                Login
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="px-4 py-2 bg-gray-700 text-white rounded">
+                {username}
+              </span>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+              >
+                Sign Out
+              </button>
+              <button
+                onClick={handleProfileClick}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
+              >
+                Profile / Settings
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -87,15 +115,11 @@ export default function Marketplace() {
             <h2 className="text-lg font-semibold mt-2">{listing.title}</h2>
             <p className="text-sm text-gray-300">
               {listing.condition}
-              {listing.graded
-                ? ` • ${listing.gradingCompany} ${listing.grade}`
-                : ""}
+              {listing.graded ? ` • ${listing.gradingCompany} ${listing.grade}` : ""}
             </p>
             <p className="font-bold mt-1">${listing.price}</p>
             {listing.owner && (
-              <p className="text-xs text-gray-400">
-                Seller: {listing.owner.username}
-              </p>
+              <p className="text-xs text-gray-400">Seller: {listing.owner.username}</p>
             )}
           </div>
         ))}

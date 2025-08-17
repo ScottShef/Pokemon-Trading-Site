@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  // Validate form fields
   const validateField = (name: string, value: string) => {
     let error = "";
     if (name === "identifier" && !value.trim()) error = "Username or Email is required";
@@ -35,27 +36,32 @@ export default function LoginPage() {
     validateField(name, value);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setMessage("");
-    Object.entries(form).forEach(([name, value]) => validateField(name, value));
-    if (Object.values(errors).some((err) => err)) return;
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  setMessage("");
+  Object.entries(form).forEach(([name, value]) => validateField(name, value));
+  if (Object.values(errors).some((err) => err)) return;
 
-    try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        identifier: form.identifier,
-        password: form.password,
-      });
+  try {
+    const res = await axios.post("http://localhost:5000/api/auth/login", {
+      identifier: form.identifier,
+      password: form.password,
+    });
+    
+    // Store actual username returned from backend
+    localStorage.setItem("username", res.data.user.username);
 
-      setMessage(res.data.message || "Login successful!");
-      setForm({ identifier: "", password: "" });
-      setErrors({});
-      router.push("/");
-    } catch (err: any) {
-      setMessage(err.response?.data?.error || "Something went wrong");
-      console.error("Backend error:", err.response?.data);
-    }
-  };
+    setMessage(res.data.message || "Login successful!");
+    setForm({ identifier: "", password: "" });
+    setErrors({});
+
+    // Redirect to home page
+    router.push("/");
+  } catch (err: any) {
+    setMessage(err.response?.data?.error || "Something went wrong");
+    console.error("Backend error:", err.response?.data);
+  }
+};
 
   return (
     <div

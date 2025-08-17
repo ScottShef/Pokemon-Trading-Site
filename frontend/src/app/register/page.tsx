@@ -77,7 +77,12 @@ export default function RegisterPage() {
       setMessage(res.data.message || "Registered successfully!");
       setForm({ username: "", email: "", password: "", confirmPassword: "" });
       setErrors({});
-      router.push("/login");
+
+      // Store username for home page display
+      localStorage.setItem("username", form.username);
+
+      // Redirect to home page
+      router.push("/");
     } catch (err: any) {
       setMessage(err.response?.data?.error || "Something went wrong");
       console.error("Backend error:", err.response?.data);

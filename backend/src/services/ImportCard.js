@@ -1,3 +1,5 @@
+// This script imports a single Pokémon card using the PokePrice API and stores it in MongoDB.
+
 require("dotenv").config(); // Load .env variables
 const mongoose = require("mongoose");
 const axios = require("axios");

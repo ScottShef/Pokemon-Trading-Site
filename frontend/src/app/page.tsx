@@ -1,53 +1,71 @@
 "use client";
 
 import { useEffect, useState } from "react";
+declare module "react-textfit";
+import { Textfit } from "react-textfit";
 import axios from "axios";
 
-// Define the Listing type (matches your backend model)
-interface Listing {
+// Define the PokemonCard type (matches your backend model)
+interface PokemonCard {
   _id: string;
-  title: string;
-  description?: string;
-  price: number;
-  condition: string;
-  graded: boolean;
-  gradingCompany?: string;
-  grade?: string;
-  imageUrl: string;
-  owner?: {
-    username: string;
+  apiId: string;
+  name: string;
+  number: string;
+  rarity: string;
+  images: {
+    small?: string;
+    large?: string;
   };
+  set: {
+    id: string;
+    name: string;
+    series: string;
+    releaseDate?: string;
+  };
+  cardmarket?: {
+    prices?: {
+      averageSellPrice?: number;
+    };
+  };
+  tcgplayer?: any;
+  ebay?: any;
 }
 
 export default function Marketplace() {
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [cards, setCards] = useState<PokemonCard[]>([]);
   const [username, setUsername] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
+  // Fetch all cards initially or filtered by search
+  const fetchCards = async (query: string) => {
+    try {
+      const res = await axios.get<PokemonCard[]>(
+        `http://localhost:5000/api/cards/search?q=${query}`
+      );
+      setCards(res.data);
+    } catch (err) {
+      console.error("Error fetching cards:", err);
+    }
+  };
+
+  // Initial fetch
   useEffect(() => {
-    // Fetch listings
-    axios
-      .get<Listing[]>("http://localhost:5000/api/listings")
-      .then((res) => setListings(res.data))
-      .catch((err) => console.error(err));
-
-    // Check if user is logged in
+    fetchCards("");
     const storedUsername = localStorage.getItem("username");
     if (storedUsername) setUsername(storedUsername);
   }, []);
 
-  // Navigation handlers
-  const handleRegisterClick = () => {
-    window.location.href = "/register";
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    fetchCards(query);
   };
 
-  const handleLoginClick = () => {
-    window.location.href = "/login";
-  };
-
-  const handleProfileClick = () => {
-    window.location.href = "/profile";
-  };
-
+  // User navigation handlers
+  const handleRegisterClick = () => window.location.href = "/register";
+  const handleLoginClick = () => window.location.href = "/login";
+  const handleProfileClick = () => window.location.href = "/profile";
   const handleSignOut = () => {
     localStorage.removeItem("username");
     setUsername(null);
@@ -64,63 +82,87 @@ export default function Marketplace() {
         <div className="flex space-x-2">
           {!username ? (
             <>
-              <button
-                onClick={handleRegisterClick}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              >
-                Register
-              </button>
-              <button
-                onClick={handleLoginClick}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-              >
-                Login
-              </button>
+              <button onClick={handleRegisterClick} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Register</button>
+              <button onClick={handleLoginClick} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Login</button>
             </>
           ) : (
             <>
-              <span className="px-4 py-2 bg-gray-700 text-white rounded">
-                {username}
-              </span>
-              <button
-                onClick={handleSignOut}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-              >
-                Sign Out
-              </button>
-              <button
-                onClick={handleProfileClick}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-              >
-                Profile / Settings
-              </button>
+              <span className="px-4 py-2 bg-gray-700 text-white rounded">{username}</span>
+              <button onClick={handleSignOut} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Sign Out</button>
+              <button onClick={handleProfileClick} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition">Profile / Settings</button>
             </>
           )}
         </div>
       </div>
 
-      {/* Listings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {listings.map((listing) => (
+      {/* Search Bar */}
+      <div className="mb-6">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Search cards by name, number, rarity, or set..."
+          className="w-full p-3 rounded-md text-black"
+        />
+      </div>
+
+      {/* Cards Grid */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-4 gap-y-4 justify-center">
+        {cards.map((card) => (
           <div
-            key={listing._id}
-            className="p-4 rounded-xl shadow hover:shadow-lg transition"
-            style={{ backgroundColor: "#444654" }}
+            key={card._id}
+            className="p-2 rounded-xl shadow hover:shadow-lg transition"
+            style={{
+              backgroundColor: "#444654",
+              width: "220px", // slightly wider
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
           >
             <img
-              src={listing.imageUrl}
-              alt={listing.title}
-              className="rounded-md w-full h-48 object-cover"
+              src={card.images?.small || "/placeholder.png"}
+              alt={card.name}
+              style={{
+                width: "220px",
+                height: "280px",
+                objectFit: "cover",
+                borderRadius: "8px",
+              }}
             />
-            <h2 className="text-lg font-semibold mt-2">{listing.title}</h2>
-            <p className="text-sm text-gray-300">
-              {listing.condition}
-              {listing.graded ? ` • ${listing.gradingCompany} ${listing.grade}` : ""}
-            </p>
-            <p className="font-bold mt-1">${listing.price}</p>
-            {listing.owner && (
-              <p className="text-xs text-gray-400">Seller: {listing.owner.username}</p>
-            )}
+            <div className="mt-1 text-center w-full">
+              <Textfit
+                mode="single"
+                max={16}
+                min={10}
+                style={{
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  whiteSpace: "nowrap",
+                  width: "100%",
+                }}
+              >
+                {card.name} #{card.number}
+              </Textfit>
+
+              <Textfit
+                mode="single"
+                max={12}
+                min={8}
+                style={{
+                  color: "#d1d5db",
+                  lineHeight: 1.1,
+                  whiteSpace: "nowrap",
+                  width: "100%",
+                }}
+              >
+                {card.set?.name} • {card.set?.series}
+              </Textfit>
+
+              <p className="font-bold mt-1">
+                ${card.cardmarket?.prices?.averageSellPrice?.toFixed(2) || "N/A"}
+              </p>
+            </div>
           </div>
         ))}
       </div>

@@ -36,6 +36,10 @@ app.get("/api/protected", authMiddleware, (req, res) => {
   });
 });
 
+// Import card search route
+const cardSearchRoute = require("./routes/cardsearch");
+app.use("/api/cards", cardSearchRoute);
+
 // ========================
 // MONGODB CONNECTION
 // ========================

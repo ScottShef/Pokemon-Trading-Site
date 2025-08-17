@@ -148,17 +148,25 @@ export default function Marketplace() {
 
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-4 gap-y-4 justify-center">
+      <div
+        className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6 justify-center"
+        style={{
+          background: "linear-gradient(180deg, #2C2C38 0%, #343541 100%)",
+          padding: "2rem",
+          borderRadius: "1rem",
+        }}
+      >
         {cards.map((card) => (
           <div
             key={card._id}
-            className="p-2 rounded-xl shadow hover:shadow-lg transition"
+            className="p-3 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-2xl"
             style={{
-              backgroundColor: "#444654",
-              width: "220px", // slightly wider
+              backgroundColor: "#4B4B5A",
+              border: "1px solid #5C5C6E",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+              cursor: "pointer",
             }}
           >
             <img
@@ -166,12 +174,14 @@ export default function Marketplace() {
               alt={card.name}
               style={{
                 width: "220px",
-                height: "280px",
+                height: "300px", // increased from 280px
                 objectFit: "cover",
                 borderRadius: "8px",
+                boxShadow: "0 6px 12px rgba(0,0,0,0.4)",
+                marginBottom: "0.5rem",
               }}
             />
-            <div className="mt-1 text-center w-full">
+            <div className="text-center w-full">
               <Textfit
                 mode="single"
                 max={16}
@@ -181,6 +191,7 @@ export default function Marketplace() {
                   lineHeight: 1.2,
                   whiteSpace: "nowrap",
                   width: "100%",
+                  color: "#ECECF1",
                 }}
               >
                 {card.name} #{card.number}
@@ -191,7 +202,7 @@ export default function Marketplace() {
                 max={12}
                 min={8}
                 style={{
-                  color: "#d1d5db",
+                  color: "#C5C7D0",
                   lineHeight: 1.1,
                   whiteSpace: "nowrap",
                   width: "100%",
@@ -200,7 +211,10 @@ export default function Marketplace() {
                 {card.set?.name} • {card.set?.series}
               </Textfit>
 
-              <p className="font-bold mt-1">
+              <p
+                className="font-bold mt-1"
+                style={{ color: "#FFD700" }}
+              >
                 ${card.cardmarket?.prices?.averageSellPrice?.toFixed(2) || "N/A"}
               </p>
             </div>

@@ -4,6 +4,12 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const PokemonCard = require("../models/PokemonCard");
 
+console.log("POKEPRICE_API_KEY:", process.env.POKEPRICE_API_KEY); // test
+
+// Ensure environment variables are set
+const API_KEY = process.env.POKEPRICE_API_KEY; // make sure this is in your .env
+const MONGO_URI = process.env.MONGO_URI;
+
 // Delay helper
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

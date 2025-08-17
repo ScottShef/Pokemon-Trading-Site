@@ -2,18 +2,18 @@ const jwt = require("jsonwebtoken");
 
 // Middleware to protect routes
 const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization; // Get token from headers
+  const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: "No token provided" });
 
-  // Token format: "Bearer <token>"
   const token = authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
 
   try {
-    // Verify token and attach userId to request object
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.id;
-    next(); // Proceed to route
-  } catch {
+    req.userId = decoded.id; // Attach userId for route handlers
+    next();
+  } catch (err) {
+    console.error("JWT verification error:", err);
     res.status(401).json({ error: "Invalid token" });
   }
 };

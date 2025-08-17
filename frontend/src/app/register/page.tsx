@@ -78,8 +78,15 @@ export default function RegisterPage() {
       setForm({ username: "", email: "", password: "", confirmPassword: "" });
       setErrors({});
 
-      // Store username for home page display
-      localStorage.setItem("username", form.username);
+      // After successful registration
+      const { token, user } = res.data;
+
+      // Save token for authenticated requests
+      localStorage.setItem("token", token);
+
+      // Optional: save user info for immediate use
+      localStorage.setItem("username", user.username);
+      localStorage.setItem("email", user.email);
 
       // Redirect to home page
       router.push("/");

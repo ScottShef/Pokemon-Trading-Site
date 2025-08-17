@@ -44,8 +44,6 @@ router.post("/register", async (req, res) => {
 // LOGIN ROUTE
 // -------------------
 router.post("/login", async (req, res) => {
-  console.log("Incoming request headers:", req.headers);
-  console.log("Incoming request body:", req.body);
 
   const { identifier, password } = req.body;
 
@@ -66,13 +64,10 @@ router.post("/login", async (req, res) => {
       ]
     });
 
-    console.log("Found user:", user);
-
     if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
     // Step 3: Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
 
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 

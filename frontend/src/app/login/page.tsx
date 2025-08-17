@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, useRef, useEffect, FormEvent, ChangeEvent } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
@@ -22,6 +22,20 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  // Refs to inputs for detecting autofill
+  const identifierRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // Sync React state with autofilled values
+  useEffect(() => {
+    if (identifierRef.current && identifierRef.current.value) {
+      setForm((prev) => ({ ...prev, identifier: identifierRef.current!.value }));
+    }
+    if (passwordRef.current && passwordRef.current.value) {
+      setForm((prev) => ({ ...prev, password: passwordRef.current!.value }));
+    }
+  }, []);
+
   // Validate form fields
   const validateField = (name: string, value: string) => {
     let error = "";
@@ -36,32 +50,37 @@ export default function LoginPage() {
     validateField(name, value);
   };
 
-const handleSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setMessage("");
-  Object.entries(form).forEach(([name, value]) => validateField(name, value));
-  if (Object.values(errors).some((err) => err)) return;
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setMessage("");
 
-  try {
-    const res = await axios.post("http://localhost:5000/api/auth/login", {
-      identifier: form.identifier,
-      password: form.password,
-    });
-    
-    // Store actual username returned from backend
-    localStorage.setItem("username", res.data.user.username);
+    // Make sure we get the latest values from refs (autofill workaround)
+    const identifier = identifierRef.current?.value || "";
+    const password = passwordRef.current?.value || "";
+    setForm({ identifier, password });
 
-    setMessage(res.data.message || "Login successful!");
-    setForm({ identifier: "", password: "" });
-    setErrors({});
+    Object.entries({ identifier, password }).forEach(([name, value]) => validateField(name, value));
+    if (!identifier || !password || Object.values(errors).some((err) => err)) return;
 
-    // Redirect to home page
-    router.push("/");
-  } catch (err: any) {
-    setMessage(err.response?.data?.error || "Something went wrong");
-    console.error("Backend error:", err.response?.data);
-  }
-};
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/login", {
+        identifier,
+        password,
+      });
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("username", res.data.user.username);
+
+      setMessage(res.data.message || "Login successful!");
+      setForm({ identifier: "", password: "" });
+      setErrors({});
+
+      router.push("/");
+    } catch (err: any) {
+      setMessage(err.response?.data?.error || "Something went wrong");
+      console.error("Backend error:", err.response?.data);
+    }
+  };
 
   return (
     <div
@@ -106,12 +125,14 @@ const handleSubmit = async (e: FormEvent) => {
               Username or Email:
             </label>
             <input
+              ref={identifierRef}
               type="text"
               name="identifier"
               id="identifier"
               value={form.identifier}
               onChange={handleChange}
               placeholder="Enter username or email"
+              autoComplete="username"
               style={{
                 width: "100%",
                 padding: "10px",
@@ -130,12 +151,14 @@ const handleSubmit = async (e: FormEvent) => {
               Password:
             </label>
             <input
+              ref={passwordRef}
               type={showPassword ? "text" : "password"}
               name="password"
               id="password"
               value={form.password}
               onChange={handleChange}
               placeholder="Enter your password"
+              autoComplete="current-password"
               style={{
                 width: "100%",
                 padding: "10px 40px 10px 10px",
@@ -183,7 +206,6 @@ const handleSubmit = async (e: FormEvent) => {
             Login
           </button>
 
-          {/* Back to Home */}
           <button
             type="button"
             onClick={() => router.push("/")}
@@ -202,7 +224,6 @@ const handleSubmit = async (e: FormEvent) => {
             &larr; Back to Home
           </button>
 
-          {/* Don’t have account */}
           <p style={{ marginTop: "10px", textAlign: "center" }}>
             Don’t have an account?{" "}
             <span

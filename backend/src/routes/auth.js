@@ -44,39 +44,23 @@ router.post("/register", async (req, res) => {
 // LOGIN ROUTE
 // -------------------
 router.post("/login", async (req, res) => {
-  console.log("Incoming request headers:", req.headers);
-  console.log("Incoming request body:", req.body);
-
   const { identifier, password } = req.body;
 
-  // Step 1: Check for missing fields
-  if (!identifier || !password) {
-    console.log("Missing identifier or password");
-    return res.status(400).json({ error: "Missing credentials" });
-  }
-
-  console.log("Login attempt:", { identifier, password });
+  if (!identifier || !password) return res.status(400).json({ error: "Missing credentials" });
 
   try {
-    // Step 2: Find user by email or username (both case-insensitive)
     const user = await User.findOne({
       $or: [
-        { email: { $regex: `^${identifier}$`, $options: "i" } },      // email case-insensitive
-        { username: { $regex: `^${identifier}$`, $options: "i" } }   // username case-insensitive
+        { email: { $regex: `^${identifier}$`, $options: "i" } },
+        { username: { $regex: `^${identifier}$`, $options: "i" } }
       ]
     });
 
-    console.log("Found user:", user);
-
     if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
-    // Step 3: Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
-
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
-    // Step 4: Generate JWT
     const token = jwt.sign(
       { id: user._id, username: user.username },
       process.env.JWT_SECRET,
@@ -113,14 +97,15 @@ router.put("/change-password", authMiddleware, async (req, res) => {
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) return res.status(400).json({ error: "Current password is incorrect" });
 
-    // Hash and save new password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    user.password = newPassword; // Let pre-save hook hash it
     await user.save();
 
+    console.log(`new password: ${newPassword}`);
+    console.log(`Password updated for user ${user._id}`);
+    console.log(`Stored password hash: ${user.password}`);
     res.json({ message: "Password updated successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Change password error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

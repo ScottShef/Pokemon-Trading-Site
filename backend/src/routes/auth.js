@@ -100,9 +100,6 @@ router.put("/change-password", authMiddleware, async (req, res) => {
     user.password = newPassword; // Let pre-save hook hash it
     await user.save();
 
-    console.log(`new password: ${newPassword}`);
-    console.log(`Password updated for user ${user._id}`);
-    console.log(`Stored password hash: ${user.password}`);
     res.json({ message: "Password updated successfully" });
   } catch (err) {
     console.error("Change password error:", err);

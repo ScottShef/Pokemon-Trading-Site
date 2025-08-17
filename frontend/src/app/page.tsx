@@ -35,6 +35,7 @@ export default function Marketplace() {
   const [cards, setCards] = useState<PokemonCard[]>([]);
   const [username, setUsername] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Fetch all cards initially or filtered by search
   const fetchCards = async (query: string) => {
@@ -60,6 +61,22 @@ export default function Marketplace() {
     const query = e.target.value;
     setSearchQuery(query);
     fetchCards(query);
+  };
+
+
+  // Handler for the dropdown and sorting
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const order = e.target.value as "asc" | "desc";
+    setSortOrder(order);
+
+    // Optionally, sort the currently loaded cards in the frontend
+    setCards((prevCards) => {
+      return [...prevCards].sort((a, b) => {
+        const priceA = a.cardmarket?.prices?.averageSellPrice || 0;
+        const priceB = b.cardmarket?.prices?.averageSellPrice || 0;
+        return order === "asc" ? priceA - priceB : priceB - priceA;
+      });
+    });
   };
 
   // User navigation handlers
@@ -95,21 +112,39 @@ export default function Marketplace() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6 flex justify-center">
-        <div className="w-2/3 md:w-1/2 lg:w-1/3">
+      {/* Search Bar and Sort */}
+      <div className="mb-6 flex justify-center items-center gap-3">
+        {/* Search input */}
+        <div className="flex-1 max-w-md">
           <input
             type="text"
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="Search cards by name, number, rarity, or set..."
-            className="w-full p-2 md:p-3 rounded-md text-black bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder-gray-500 text-sm md:text-base"
+            className="w-full px-3 py-2 rounded-md text-gray-800 bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder-gray-400 text-sm md:text-sm font-medium"
             style={{
-              boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
+              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
             }}
           />
         </div>
+
+        {/* Sort dropdown */}
+        <div className="w-36">
+          <select
+            value={sortOrder}
+            onChange={handleSortChange}
+            className="w-full px-2 py-2 rounded-md text-gray-800 bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm md:text-sm font-medium cursor-pointer appearance-none"
+            style={{
+              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+              fontSize: '0.875rem', // slightly smaller to prevent truncation
+            }}
+          >
+            <option value="desc">Price: High → Low</option>
+            <option value="asc">Price: Low → High</option>
+          </select>
+        </div>
       </div>
+
 
 
       {/* Cards Grid */}

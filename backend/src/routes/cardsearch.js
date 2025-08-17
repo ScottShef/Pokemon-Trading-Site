@@ -7,29 +7,39 @@ const PokemonCard = require("../models/PokemonCard"); // adjust path to your mod
 const STOP_WORDS = ["the", "a", "an", "of", "and", "in", "on", "&"];
 
 // GET /api/cards/search?q=...
+// GET /api/cards/search?q=...&sort=asc|desc
 router.get("/search", async (req, res) => {
   try {
-    const { q } = req.query;
-    if (!q) return res.json(await PokemonCard.find().limit(100));
+    const { q, sort } = req.query;
 
-    // Split query into keywords, remove stop words, trim spaces
-    const keywords = q
-      .split(/\s+/)
-      .map((kw) => kw.trim().toLowerCase())
-      .filter((kw) => kw && !STOP_WORDS.includes(kw));
+    // Build keyword search (same as before)
+    let andConditions = [];
+    if (q) {
+      const keywords = q
+        .split(/\s+/)
+        .map((kw) => kw.trim().toLowerCase())
+        .filter((kw) => kw);
 
-    // Build $and array: each keyword must match at least one field
-    const andConditions = keywords.map((keyword) => ({
-      $or: [
-        { name: { $regex: keyword, $options: "i" } },
-        { number: { $regex: keyword, $options: "i" } },
-        { "set.name": { $regex: keyword, $options: "i" } },
-        { "set.series": { $regex: keyword, $options: "i" } },
-        { rarity: { $regex: keyword, $options: "i" } },
-      ],
-    }));
+      andConditions = keywords.map((keyword) => ({
+        $or: [
+          { name: { $regex: keyword, $options: "i" } },
+          { number: { $regex: keyword, $options: "i" } },
+          { "set.name": { $regex: keyword, $options: "i" } },
+          { "set.series": { $regex: keyword, $options: "i" } },
+          { rarity: { $regex: keyword, $options: "i" } },
+        ],
+      }));
+    }
 
-    const cards = await PokemonCard.find({ $and: andConditions }).limit(100);
+    const finalQuery = andConditions.length > 0 ? { $and: andConditions } : {};
+
+    // Determine sort order: ascending or descending
+    const sortOrder = sort === "asc" ? 1 : -1; // default to descending
+
+    const cards = await PokemonCard.find(finalQuery)
+      .sort({ "cardmarket.prices.averageSellPrice": sortOrder })
+      .limit(100);
+
     res.json(cards);
   } catch (err) {
     console.error(err);

@@ -17,10 +17,7 @@ router.post("/register", async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: "Email already registered" });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = new User({ username, email, password: hashedPassword });
+    const user = new User({ username, email, password });
     await user.save();
 
     // Send confirmation email
@@ -47,26 +44,44 @@ router.post("/register", async (req, res) => {
 // LOGIN ROUTE
 // -------------------
 router.post("/login", async (req, res) => {
+  console.log("Incoming request headers:", req.headers);
+  console.log("Incoming request body:", req.body);
+
   const { identifier, password } = req.body;
 
+  // Step 1: Check for missing fields
   if (!identifier || !password) {
+    console.log("Missing identifier or password");
     return res.status(400).json({ error: "Missing credentials" });
   }
 
+  console.log("Login attempt:", { identifier, password });
+
   try {
+    // Step 2: Find user by email or username (both case-insensitive)
     const user = await User.findOne({
       $or: [
-        { email: { $regex: `^${identifier}$`, $options: "i" } },
-        { username: { $regex: `^${identifier}$`, $options: "i" } }
+        { email: { $regex: `^${identifier}$`, $options: "i" } },      // email case-insensitive
+        { username: { $regex: `^${identifier}$`, $options: "i" } }   // username case-insensitive
       ]
     });
 
+    console.log("Found user:", user);
+
     if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
+    // Step 3: Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match:", isMatch);
+
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    // Step 4: Generate JWT
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     res.json({
       message: "Login successful",
@@ -83,32 +98,29 @@ router.post("/login", async (req, res) => {
 // CHANGE PASSWORD ROUTE
 // -------------------
 router.put("/change-password", authMiddleware, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.userId; // From JWT middleware
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
   try {
-    console.log("Incoming request body:", req.body);
-    console.log("User ID from token:", req.userId);
-
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.userId;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    // Validate current password
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) return res.status(400).json({ error: "Current password is incorrect" });
 
+    // Hash and save new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
-
     await user.save();
-    console.log("Password updated successfully in DB");
 
     res.json({ message: "Password updated successfully" });
   } catch (err) {
-    console.error("Error in change-password route:", err);
+    console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });

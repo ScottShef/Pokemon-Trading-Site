@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 declare module "react-textfit";
 import { Textfit } from "react-textfit";
 import axios from "axios";
+import { useRouter } from "next/navigation"; // ✅ for navigation
 
 // Define the PokemonCard type (matches your backend model)
 interface PokemonCard {
@@ -36,6 +37,7 @@ export default function Marketplace() {
   const [username, setUsername] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const router = useRouter(); // ✅ for navigation
 
   // Fetch all cards initially or filtered by search
   const fetchCards = async (query: string) => {
@@ -63,13 +65,11 @@ export default function Marketplace() {
     fetchCards(query);
   };
 
-
   // Handler for the dropdown and sorting
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const order = e.target.value as "asc" | "desc";
     setSortOrder(order);
 
-    // Optionally, sort the currently loaded cards in the frontend
     setCards((prevCards) => {
       return [...prevCards].sort((a, b) => {
         const priceA = a.cardmarket?.prices?.averageSellPrice || 0;
@@ -136,7 +136,7 @@ export default function Marketplace() {
             className="w-full px-2 py-2 rounded-md text-gray-800 bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm md:text-sm font-medium cursor-pointer appearance-none"
             style={{
               boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              fontSize: '0.875rem', // slightly smaller to prevent truncation
+              fontSize: '0.875rem',
             }}
           >
             <option value="desc">Price: High → Low</option>
@@ -145,9 +145,7 @@ export default function Marketplace() {
         </div>
       </div>
 
-
-
-      {/* Cards Grid */}
+      {/* ✅ Updated Cards Grid */}
       <div
         className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6 justify-center"
         style={{
@@ -159,6 +157,7 @@ export default function Marketplace() {
         {cards.map((card) => (
           <div
             key={card._id}
+            onClick={() => router.push(`/cards/${card._id}`)} // ✅ navigate to detail page
             className="p-3 rounded-xl transition-all duration-200 transform hover:scale-105 hover:shadow-2xl"
             style={{
               backgroundColor: "#4B4B5A",
@@ -174,7 +173,7 @@ export default function Marketplace() {
               alt={card.name}
               style={{
                 width: "220px",
-                height: "300px", // increased from 280px
+                height: "300px",
                 objectFit: "cover",
                 borderRadius: "8px",
                 boxShadow: "0 6px 12px rgba(0,0,0,0.4)",

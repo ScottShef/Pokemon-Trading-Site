@@ -40,6 +40,10 @@ app.get("/api/protected", authMiddleware, (req, res) => {
 const cardSearchRoute = require("./routes/cardsearch");
 app.use("/api/cards", cardSearchRoute);
 
+// Card Page Details Route
+const pokemonRoutes = require("./routes/cardpage"); // or cards.js
+app.use("/api", pokemonRoutes);
+
 // ========================
 // MONGODB CONNECTION
 // ========================

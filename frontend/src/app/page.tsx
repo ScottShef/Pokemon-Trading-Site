@@ -96,15 +96,21 @@ export default function Marketplace() {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          placeholder="Search cards by name, number, rarity, or set..."
-          className="w-full p-3 rounded-md text-black"
-        />
+      <div className="mb-6 flex justify-center">
+        <div className="w-2/3 md:w-1/2 lg:w-1/3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search cards by name, number, rarity, or set..."
+            className="w-full p-2 md:p-3 rounded-md text-black bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder-gray-500 text-sm md:text-base"
+            style={{
+              boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
+            }}
+          />
+        </div>
       </div>
+
 
       {/* Cards Grid */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-4 gap-y-4 justify-center">

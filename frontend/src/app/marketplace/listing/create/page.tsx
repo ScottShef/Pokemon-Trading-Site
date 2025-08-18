@@ -113,7 +113,7 @@ export default function CreateListingPage() {
       );
 
       alert('Listing created successfully!');
-      router.push('/');
+      router.push('/marketplace'); // Redirect to the marketplace page
 
     } catch (err: any) {
       console.error("Failed to create listing:", err);

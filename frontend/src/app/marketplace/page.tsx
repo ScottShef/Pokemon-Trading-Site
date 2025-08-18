@@ -58,7 +58,7 @@ export default function MarketplacePage() {
             <p className="text-gray-400">Browse listings from other trainers.</p>
           </div>
           <button
-              onClick={() => router.push('/listing/create')}
+              onClick={() => router.push('marketplace/listing/create')}
               className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition"
             >
               + Create New Listing

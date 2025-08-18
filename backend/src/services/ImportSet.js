@@ -19,17 +19,28 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fetch all cards in a set
+// Fetch cards in a set with pagination
 async function fetchCardsInSet(setId) {
-  try {
-    const response = await axios.get(`https://www.pokemonpricetracker.com/api/prices?setId=${setId}`, {
-      headers: { Authorization: `Bearer ${API_KEY}` }
-    });
-    return response.data.data;
-  } catch (err) {
-    console.error("Error fetching cards:", err.response?.data || err.message);
-    return [];
-  }
+  const allCards = [];
+  let page = 1;
+  let fetchedCards = [];
+
+  do {
+    try {
+      const response = await axios.get(`https://www.pokemonpricetracker.com/api/prices?setId=${setId}&limit=100&page=${page}`, {
+        headers: { Authorization: `Bearer ${API_KEY}` }
+      });
+
+      fetchedCards = response.data.data;
+      allCards.push(...fetchedCards);
+      page++;
+    } catch (err) {
+      console.error("Error fetching cards:", err.response?.data || err.message);
+      break;
+    }
+  } while (fetchedCards.length > 0);
+
+  return allCards;
 }
 
 // Import a single card into MongoDB
@@ -60,16 +71,16 @@ async function importCard(card) {
   }
 }
 
-// Import all cards in a set **with rate limiting**
+// Import all cards in a set with rate limiting
 async function importSet(setId) {
   const cards = await fetchCardsInSet(setId);
   console.log(`Found ${cards.length} cards in set ${setId}`);
 
-  const REQUEST_INTERVAL = 1000; // 1 request per second (60/min)
+  const REQUEST_INTERVAL = 1000; // 1 request per second
 
   for (const card of cards) {
     await importCard(card);
-    await wait(REQUEST_INTERVAL); // wait 1 second between requests
+    await wait(REQUEST_INTERVAL);
   }
 
   console.log(`Finished importing set ${setId}`);

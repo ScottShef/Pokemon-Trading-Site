@@ -1,13 +1,12 @@
-// src/services/ImportAllSets.js
 require("dotenv").config();
 const axios = require("axios");
 const mongoose = require("mongoose");
 const PokemonCard = require("../models/PokemonCard");
 
-console.log("POKEPRICE_API_KEY:", process.env.POKEPRICE_API_KEY); // test
+console.log("POKEPRICE_API_KEY:", process.env.POKEPRICE_API_KEY);
 
 // Ensure environment variables are set
-const API_KEY = process.env.POKEPRICE_API_KEY; // make sure this is in your .env
+const API_KEY = process.env.POKEPRICE_API_KEY;
 const MONGO_URI = process.env.MONGO_URI;
 
 // Delay helper
@@ -40,7 +39,7 @@ class RateLimiter {
       } catch (err) {
         reject(err);
       }
-      await wait(this.intervalMs); // wait between calls
+      await wait(this.intervalMs);
     }
 
     this.running = false;
@@ -51,12 +50,12 @@ const rateLimiter = new RateLimiter(1100); // ~60 calls/min
 
 // Headers for API
 const headers = {
-  Authorization: `Bearer ${process.env.POKEPRICE_API_KEY}`,
+  Authorization: `Bearer ${API_KEY}`,
 };
 
 // MongoDB connection
 if (mongoose.connection.readyState === 0) {
-  mongoose.connect(process.env.MONGO_URI)
+  mongoose.connect(MONGO_URI)
     .then(() => console.log("MongoDB connected"))
     .catch(err => console.error("MongoDB connection error:", err));
 }
@@ -67,10 +66,25 @@ async function getSets() {
   return res.data.data;
 }
 
-// Fetch cards in a set
+// Fetch all cards in a set with pagination
 async function getCardsInSet(setId) {
-  const res = await axios.get(`https://www.pokemonpricetracker.com/api/prices?setId=${setId}`, { headers });
-  return res.data.data;
+  let allCards = [];
+  let page = 1;
+  let fetchedCards = [];
+
+  do {
+    try {
+      const res = await axios.get(`https://www.pokemonpricetracker.com/api/prices?setId=${setId}&limit=200&page=${page}`, { headers });
+      fetchedCards = res.data.data;
+      allCards.push(...fetchedCards);
+      page++;
+    } catch (err) {
+      console.error(`Error fetching cards for set ${setId}, page ${page}:`, err.response?.data || err.message);
+      break;
+    }
+  } while (fetchedCards.length > 0);
+
+  return allCards;
 }
 
 // Fetch card details
@@ -113,7 +127,7 @@ async function importAllSets() {
     const sets = await getSets();
     console.log(`Found ${sets.length} sets`);
 
-    const setPromises = sets.map(async (set) => {
+    for (const set of sets) {
       console.log(`Importing set: ${set.name} (${set.id})`);
       const cards = await getCardsInSet(set.id);
 
@@ -130,10 +144,10 @@ async function importAllSets() {
       }));
 
       await Promise.all(cardPromises);
-    });
+    }
 
-    await Promise.all(setPromises);
     console.log("Finished importing all sets!");
+    mongoose.disconnect();
   } catch (err) {
     console.error("Error importing sets:", err);
     throw err;

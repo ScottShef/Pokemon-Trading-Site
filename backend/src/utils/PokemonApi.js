@@ -1,9 +1,9 @@
-const axios = require("axios");
+
+import axios from 'axios';
 
 const API_BASE = "https://www.pokemonpricetracker.com/api";
-const API_KEY = "pokeprice_free_88e09dbbadfcfe3b80cc4fa793c8a879cea3ab75d1faefce";
+const API_KEY = "pokeprice_free_88e09dbbadfcfe3b80cc4fa793c8a879cea3ab75"; // This should be in your .env file
 
-// 1. Get all sets
 async function fetchSets() {
   const res = await axios.get(`${API_BASE}/sets`, {
     headers: { Authorization: `Bearer ${API_KEY}` },
@@ -11,7 +11,6 @@ async function fetchSets() {
   return res.data;
 }
 
-// 2. Get all cards in a set
 async function fetchCardsBySet(setId) {
   const res = await axios.get(`${API_BASE}/prices?setId=${setId}`, {
     headers: { Authorization: `Bearer ${API_KEY}` },
@@ -19,7 +18,6 @@ async function fetchCardsBySet(setId) {
   return res.data;
 }
 
-// 3. Get a specific card by ID
 async function fetchCardById(cardId) {
   const res = await axios.get(`${API_BASE}/prices?id=${cardId}`, {
     headers: { Authorization: `Bearer ${API_KEY}` },
@@ -27,4 +25,6 @@ async function fetchCardById(cardId) {
   return res.data;
 }
 
-module.exports = { fetchSets, fetchCardsBySet, fetchCardById };
+// --- Key change is here ---
+export { fetchSets, fetchCardsBySet, fetchCardById };
+

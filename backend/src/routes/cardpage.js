@@ -1,13 +1,12 @@
-// route for fetching card details
 
-const express = require("express");
+import express from 'express';
+import PokemonCard from '../models/PokemonCard.js'; // Note the import change
+
 const router = express.Router();
-const Card = require("../models/PokemonCard"); // adjust path if needed
 
-// Get a single card by ID
 router.get("/cards/:id", async (req, res) => {
   try {
-    const card = await Card.findById(req.params.id);
+    const card = await PokemonCard.findById(req.params.id);
     if (!card) return res.status(404).send("Card not found");
     res.json(card);
   } catch (err) {
@@ -16,4 +15,5 @@ router.get("/cards/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
+

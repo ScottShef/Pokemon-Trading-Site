@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+
+import mongoose from 'mongoose';
 
 const PriceStatsSchema = new mongoose.Schema({
   low: Number,
@@ -11,7 +12,6 @@ const PriceStatsSchema = new mongoose.Schema({
   reverseHoloTrend: Number,
   lowPrice: Number,
   reverseHoloLow: Number,
-  // Add any other relevant fields
 }, { _id: false });
 
 const PokemonCardSchema = new mongoose.Schema({
@@ -45,9 +45,19 @@ const PokemonCardSchema = new mongoose.Schema({
   },
   ebay: {
     updatedAt: Date,
-    prices: mongoose.Schema.Types.Mixed // Can keep mixed here for graded keys (PSA10, PSA9, etc.)
+    prices: mongoose.Schema.Types.Mixed
   },
-  lastUpdated: Date
+  lastUpdated: Date,
+
+  highestMarketPrice: {
+    type: Number,
+    default: 0,       // Sets a default value of 0 for new cards
+    index: true         // Creates a database index for faster sorting
+  }
+
 }, { timestamps: true });
 
-module.exports = mongoose.model("PokemonCard", PokemonCardSchema);
+const PokemonCard = mongoose.model("PokemonCard", PokemonCardSchema);
+
+export default PokemonCard;
+

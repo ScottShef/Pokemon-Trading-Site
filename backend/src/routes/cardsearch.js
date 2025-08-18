@@ -1,26 +1,20 @@
-// routes/cardsearch.js
-const express = require("express");
-const router = express.Router();
-const PokemonCard = require("../models/PokemonCard"); // adjust path to your model
 
-// Define stop words you want to ignore
+import express from 'express';
+import PokemonCard from '../models/PokemonCard.js';
+
+const router = express.Router();
+
 const STOP_WORDS = ["the", "a", "an", "of", "and", "in", "on", "&"];
 
-// GET /api/cards/search?q=...
-// GET /api/cards/search?q=...&sort=asc|desc
 router.get("/search", async (req, res) => {
   try {
     const { q, sort } = req.query;
 
-    // Build keyword search (same as before)
+    // Keyword search logic (remains unchanged)
     let andConditions = [];
     if (q) {
-      const keywords = q
-        .split(/\s+/)
-        .map((kw) => kw.trim().toLowerCase())
-        .filter((kw) => kw);
-
-      andConditions = keywords.map((keyword) => ({
+      const keywords = q.split(/\s+/).map(kw => kw.trim().toLowerCase()).filter(kw => kw && !STOP_WORDS.includes(kw));
+      andConditions = keywords.map(keyword => ({
         $or: [
           { name: { $regex: keyword, $options: "i" } },
           { number: { $regex: keyword, $options: "i" } },
@@ -30,21 +24,34 @@ router.get("/search", async (req, res) => {
         ],
       }));
     }
-
     const finalQuery = andConditions.length > 0 ? { $and: andConditions } : {};
 
-    // Determine sort order: ascending or descending
-    const sortOrder = sort === "asc" ? 1 : -1; // default to descending
+    // --- FIX: Define the sorting logic based on the new top-level field ---
+    let sortOptions = {};
+    
+    // This is the only line that needs to change.
+    const sortKey = 'highestMarketPrice'; 
+
+    switch (sort) {
+      case 'price-asc':
+        sortOptions = { [sortKey]: 1 }; // Sort ascending by highestMarketPrice
+        break;
+      case 'price-desc':
+      default:
+        sortOptions = { [sortKey]: -1 }; // Sort descending by highestMarketPrice
+        break;
+    }
 
     const cards = await PokemonCard.find(finalQuery)
-      .sort({ "cardmarket.prices.averageSellPrice": sortOrder })
+      .sort(sortOptions)
       .limit(100);
 
     res.json(cards);
   } catch (err) {
-    console.error(err);
+    console.error("Error in card search:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-module.exports = router;
+export default router;
+

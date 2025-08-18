@@ -1,22 +1,19 @@
-// this file is responsible for scheduling daily updates of Pokémon card data from the PokePrice API
 
-// src/services/scheduler.js
-require("dotenv").config();
-const cron = require("node-cron");
-const mongoose = require("mongoose");
-const importAllSets = require("./ImportAllSets");
+import dotenv from 'dotenv';
+import cron from 'node-cron';
+import importAllSets from './ImportAllSets.js'; // Use default import
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected for scheduler"))
-  .catch(err => console.error("MongoDB connection error:", err));
+dotenv.config();
+
+console.log("Scheduler initializing...");
 
 // Schedule daily at 2am server time
 cron.schedule("0 2 * * *", async () => {
   console.log(`[${new Date().toISOString()}] Starting daily Pokémon card import...`);
   try {
+    // The importAllSets function now handles its own DB connection/disconnection
     await importAllSets();
-    console.log(`[${new Date().toISOString()}] Daily import finished!`);
+    console.log(`[${new Date().toISOString()}] Daily import finished successfully!`);
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Daily import failed:`, err);
   }
@@ -24,4 +21,5 @@ cron.schedule("0 2 * * *", async () => {
   timezone: "America/New_York" // adjust to your timezone
 });
 
-console.log("Scheduler running. Daily import will run at 2am server time.");
+console.log("Scheduler is running. Daily data import will run at 2am server time.");
+

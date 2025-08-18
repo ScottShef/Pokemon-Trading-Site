@@ -1,10 +1,10 @@
-const express = require("express");
-const PokemonCard = require("../models/PokemonCard");
-const { fetchSets, fetchCardsBySet, fetchCardById } = require("../utils/PokemonApi");
+
+import express from 'express';
+import PokemonCard from '../models/PokemonCard.js'; // Note the import change
+import { fetchSets, fetchCardsBySet, fetchCardById } from '../utils/PokemonApi.js'; // Assuming this file will also be converted
 
 const router = express.Router();
 
-// 1. Get all sets
 router.get("/sets", async (req, res) => {
   try {
     const sets = await fetchSets();
@@ -15,31 +15,29 @@ router.get("/sets", async (req, res) => {
   }
 });
 
-// 2. Import all cards from a set
 router.post("/import/set/:setId", async (req, res) => {
   const { setId } = req.params;
-
   try {
     const cards = await fetchCardsBySet(setId);
     const results = [];
-
     for (const card of cards) {
       const savedCard = await PokemonCard.findOneAndUpdate(
-        { cardId: card.id },
+        { apiId: card.id }, // Changed from cardId to apiId to match schema
         {
-          cardId: card.id,
+          apiId: card.id,
           name: card.name,
           set: card.set,
           rarity: card.rarity,
           images: card.images,
-          prices: card.prices,
+          // Assuming prices come in a compatible format
+          tcgplayer: card.tcgplayer,
+          cardmarket: card.cardmarket,
           lastUpdated: new Date(),
         },
         { upsert: true, new: true }
       );
       results.push(savedCard);
     }
-
     res.json({ message: `Imported ${results.length} cards from set ${setId}`, cards: results });
   } catch (err) {
     console.error("Error importing set:", err.message);
@@ -47,31 +45,27 @@ router.post("/import/set/:setId", async (req, res) => {
   }
 });
 
-// 3. Import single card by cardId
 router.post("/import/card/:cardId", async (req, res) => {
   const { cardId } = req.params;
-
   try {
     const card = await fetchCardById(cardId);
-
     if (!card || !card.id) {
       return res.status(404).json({ error: "Card not found" });
     }
-
     const savedCard = await PokemonCard.findOneAndUpdate(
-      { cardId: card.id },
+      { apiId: card.id }, // Changed from cardId to apiId
       {
-        cardId: card.id,
+        apiId: card.id,
         name: card.name,
         set: card.set,
         rarity: card.rarity,
         images: card.images,
-        prices: card.prices,
+        tcgplayer: card.tcgplayer,
+        cardmarket: card.cardmarket,
         lastUpdated: new Date(),
       },
       { upsert: true, new: true }
     );
-
     res.json({ message: `Card ${cardId} imported successfully`, card: savedCard });
   } catch (err) {
     console.error("Error importing card:", err.message);
@@ -79,4 +73,4 @@ router.post("/import/card/:cardId", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

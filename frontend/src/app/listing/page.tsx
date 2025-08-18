@@ -5,9 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
-// --- DEFINITIONS MOVED HERE ---
-// By defining these constants outside the component, they are in the module's scope
-// and can be accessed by the component without issue.
+// --- (Constants and Type Definitions remain the same) ---
 const RAW_CONDITIONS = ['Mint', 'Near Mint', 'Lightly Played', 'Heavily Played'];
 const GRADING_COMPANIES = ['PSA', 'CGC', 'Beckett'];
 const GRADE_OPTIONS = {
@@ -19,8 +17,7 @@ const GRADE_OPTIONS = {
 
 export default function CreateListingPage() {
   const router = useRouter();
-
-  // --- Form State ---
+  // ... (All your state definitions remain the same)
   const [cardName, setCardName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -28,32 +25,25 @@ export default function CreateListingPage() {
   const [backImage, setBackImage] = useState<File | null>(null);
   const [frontImagePreview, setFrontImagePreview] = useState<string | null>(null);
   const [backImagePreview, setBackImagePreview] = useState<string | null>(null);
-  
-  // --- Conditional Logic & UI State ---
   const [listingType, setListingType] = useState<'raw' | 'graded'>('raw');
   const [rawCondition, setRawCondition] = useState('Mint');
   const [gradedCompany, setGradedCompany] = useState<'PSA' | 'CGC' | 'Beckett'>('PSA');
   const [gradedGrade, setGradedGrade] = useState('10');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // This line will now work correctly because GRADE_OPTIONS is in scope
   const availableGrades = useMemo(() => GRADE_OPTIONS[gradedCompany] || [], [gradedCompany]);
-  
+
   useEffect(() => {
     if (availableGrades.length > 0) {
         setGradedGrade(availableGrades[0]);
     }
   }, [availableGrades]);
 
-  // ... (The rest of the component code, including handleSubmit, handleFileChange, and the JSX, remains exactly the same)
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, side: 'front' | 'back') => {
+    // ... (This function remains the same)
     const file = e.target.files?.[0];
     if (!file) return;
-
     const previewUrl = URL.createObjectURL(file);
-
     if (side === 'front') {
       setFrontImage(file);
       setFrontImagePreview(previewUrl);
@@ -62,70 +52,92 @@ export default function CreateListingPage() {
       setBackImagePreview(previewUrl);
     }
   };
-  
+
   useEffect(() => {
-      return () => {
-          if (frontImagePreview) URL.revokeObjectURL(frontImagePreview);
-          if (backImagePreview) URL.revokeObjectURL(backImagePreview);
-      };
+    // ... (This function remains the same)
+    return () => {
+        if (frontImagePreview) URL.revokeObjectURL(frontImagePreview);
+        if (backImagePreview) URL.revokeObjectURL(backImagePreview);
+    };
   }, [frontImagePreview, backImagePreview]);
 
 
+  // --- handleSubmit (Corrected) ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1. Get the authentication token from local storage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('You must be logged in to create a listing.');
+      return;
+    }
+
     if (!frontImage || !backImage) {
-        setError('Please upload images for both the front and back of the card.');
-        return;
-      }
-      
-      setIsSubmitting(true);
-      setError(null);
-  
-      const formData = new FormData();
-      formData.append('cardName', cardName);
-      formData.append('description', description);
-      formData.append('price', price);
-      formData.append('listingType', listingType);
-      
-      if (listingType === 'raw') {
-        formData.append('rawCondition', rawCondition);
-      } else {
-        formData.append('gradedData', JSON.stringify({
-          company: gradedCompany,
-          grade: gradedGrade,
-        }));
-      }
-  
-      formData.append('images', frontImage);
-      formData.append('images', backImage);
-  
-      try {
-        const response = await axios.post('/api/listings', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-  
-        alert('Listing created successfully!');
-        router.push('/');
-  
-      } catch (err: any) {
-        console.error("Failed to create listing:", err);
-        setError(err.response?.data?.msg || 'An unknown error occurred.');
-      } finally {
-        setIsSubmitting(false);
-      }
+      setError('Please upload images for both the front and back of the card.');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError(null);
+
+    // 2. Construct FormData (your existing logic is correct)
+    const formData = new FormData();
+    formData.append('cardName', cardName);
+    formData.append('description', description);
+    formData.append('price', price);
+    formData.append('listingType', listingType);
+
+    if (listingType === 'raw') {
+      formData.append('rawCondition', rawCondition);
+    } else {
+      formData.append('gradedData', JSON.stringify({
+        company: gradedCompany,
+        grade: gradedGrade,
+      }));
+    }
+    formData.append('images', frontImage);
+    formData.append('images', backImage);
+
+    try {
+      // 3. Make the POST request with the full URL and auth header
+      const response = await axios.post(
+        'http://localhost:5000/api/listings', // FIX: Use the full backend URL
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'x-auth-token': token // FIX: Send the token in the headers
+          },
+        }
+      );
+
+      alert('Listing created successfully!');
+      router.push('/');
+
+    } catch (err: any) {
+      console.error("Failed to create listing:", err);
+      // Use a more specific error message from the backend if available
+      setError(err.response?.data?.msg || err.response?.data?.error || 'An unknown error occurred.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
+    // ... (Your JSX remains exactly the same)
     <main className="p-6 min-h-screen bg-[#343541] text-[#ECECF1] flex justify-center items-center">
       <div className="w-full max-w-3xl bg-[#2C2C38] p-8 rounded-xl shadow-lg relative">
+
         <button 
           onClick={() => router.back()}
           className="absolute top-4 left-4 py-2 px-4 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-500 transition"
         >
           &larr; Back
         </button>
+
         <h1 className="text-3xl font-bold text-center mb-6">Create a New Listing</h1>
-        
+
         {error && (
             <div className="bg-red-500/30 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-4" role="alert">
                 <strong className="font-bold">Error: </strong>
@@ -134,15 +146,16 @@ export default function CreateListingPage() {
         )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          
           <div>
             <label htmlFor="cardName" className="block text-sm font-medium text-gray-300 mb-1">Card Name</label>
             <input type="text" value={cardName} onChange={e => setCardName(e.target.value)} required className="w-full px-3 py-2 rounded-md text-gray-800 bg-gray-100" />
           </div>
+
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">Description</label>
             <textarea rows={4} value={description} onChange={e => setDescription(e.target.value)} className="w-full px-3 py-2 rounded-md text-gray-800 bg-gray-100" />
           </div>
+
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-300 mb-1">Price ($)</label>
             <input type="number" value={price} onChange={e => setPrice(e.target.value)} required step="0.01" min="0" className="w-full px-3 py-2 rounded-md text-gray-800 bg-gray-100" />

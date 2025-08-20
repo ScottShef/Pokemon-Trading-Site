@@ -1,15 +1,16 @@
 import express from 'express';
-import PokemonProducts from '../models/PokemonProduct.js'; // uses productDb
+import PokemonProducts from '../models/PokemonProduct.js';
 
 const router = express.Router();
 
 const STOP_WORDS = ["the", "a", "an", "of", "and", "in", "on", "&"];
+const PRODUCT_KEYWORDS = ["box", "pack", "bundle", "case", "blister", "collection"];
 
 router.get("/search", async (req, res) => {
   try {
-    const { q, sort } = req.query;
+    const { q, sort, type } = req.query;
 
-    // Build keyword search
+    // Keyword search logic
     let andConditions = [];
     if (q) {
       const keywords = q
@@ -30,7 +31,14 @@ router.get("/search", async (req, res) => {
 
     const finalQuery = andConditions.length > 0 ? { $and: andConditions } : {};
 
-    // Sorting
+    // --- Filter by type ---
+    if (type === "card") {
+      finalQuery.type = "card";
+    } else if (type === "product") {
+      finalQuery.type = "product";
+    }
+
+    // Sorting logic
     let sortOptions = {};
     const sortKey = 'highestMarketPrice';
 
@@ -44,7 +52,6 @@ router.get("/search", async (req, res) => {
         break;
     }
 
-    // Fetch from product DB
     const cards = await PokemonProducts.find(finalQuery)
       .sort(sortOptions)
       .limit(100);

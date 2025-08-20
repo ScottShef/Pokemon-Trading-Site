@@ -1,4 +1,5 @@
-import { productDb } from '../db/connections.js';
+// models/PokemonProduct.js
+import { productDb } from '../db/connections.js'; // your connection file
 import mongoose from 'mongoose';
 
 const PriceSchema = new mongoose.Schema({
@@ -39,20 +40,13 @@ const CardSchema = new mongoose.Schema({
     series: { type: String, default: null },
     releaseDate: { type: Date, default: null }
   },
-  cardmarket: {
-    url: { type: String, default: null },
-    updatedAt: { type: Date, default: null },
-    prices: { type: PriceSchema, default: {} }
-  },
   tcgplayer: { type: TCGPlayerSchema, default: {} },
-  ebay: {
-    updatedAt: { type: Date, default: null },
-    prices: { type: mongoose.Schema.Types.Mixed, default: {} }
-  },
   lastUpdated: { type: Date, default: Date.now },
-  highestMarketPrice: { type: Number, default: 0, index: true }
-}, { timestamps: true });
+  highestMarketPrice: { type: Number, default: null },
+  type: { type: String, enum: ['card', 'product'], default: 'card' }
+});
 
+// **Important:** use `productDb.model` instead of default mongoose.model
 const PokemonProducts = productDb.model('Pokemon_Products', CardSchema, 'Pokemon_Products');
 
 export default PokemonProducts;

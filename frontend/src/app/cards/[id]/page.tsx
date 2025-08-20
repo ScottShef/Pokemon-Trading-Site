@@ -102,7 +102,7 @@ export default function CardPage({ params }: PageProps) {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Card Image */}
         <img
-          src={card.images?.large || card.images?.small || "/placeholder.png"}
+          src={card.images?.small || "/placeholder.png"}
           alt={card.name}
           className="w-64 h-auto rounded-lg shadow-lg"
         />

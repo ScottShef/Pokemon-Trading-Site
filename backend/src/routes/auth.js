@@ -1,9 +1,7 @@
-
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-// --- This is the key change ---
-import { User } from '../models/User.js'; // Changed to a named import
+import { User } from '../models/User.js'; // Named import
 import authMiddleware from '../middleware/auth.js';
 import { sendConfirmationEmail } from '../utils/mailer.js';
 
@@ -20,7 +18,14 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Email already registered" });
     }
 
-    const user = new User({ username, email, password });
+    // --- Create user with default values ---
+    const user = new User({
+      username,
+      email,
+      password,
+      reputation: 100,   // default reputation
+      reviewCount: 0     // default review count
+    });
     await user.save();
 
     try {
@@ -33,7 +38,13 @@ router.post("/register", async (req, res) => {
     res.status(201).json({
       message: "User registered successfully! Please check your email for confirmation.",
       token,
-      user: { id: user._id, username: user.username, email: user.email },
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,
+        reputation: user.reputation,
+        reviewCount: user.reviewCount
+      },
     });
   } catch (err) {
     console.error("Registration error:", err);
@@ -41,7 +52,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ... (The rest of your routes - login, change-password, etc. - remain exactly the same)
 // -------------------
 // LOGIN ROUTE
 // -------------------
@@ -58,14 +68,10 @@ router.post("/login", async (req, res) => {
       ]
     });
 
-    if (!user) {
-      return res.status(400).json({ error: "Invalid credentials" });
-    }
+    if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: "Invalid credentials" });
-    }
+    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
     const token = jwt.sign(
       { id: user._id, username: user.username },
@@ -75,7 +81,13 @@ router.post("/login", async (req, res) => {
     res.json({
       message: "Login successful",
       token,
-      user: { id: user._id, username: user.username, email: user.email },
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,
+        reputation: user.reputation,
+        reviewCount: user.reviewCount
+      },
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -95,14 +107,10 @@ router.put("/change-password", authMiddleware, async (req, res) => {
   }
   try {
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: "The current password you entered is incorrect" });
-    }
+    if (!isMatch) return res.status(400).json({ error: "The current password you entered is incorrect" });
 
     user.password = newPassword;
     await user.save();
@@ -119,9 +127,7 @@ router.put("/change-password", authMiddleware, async (req, res) => {
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select("-password"); // Exclude password hash
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
     res.json({ user });
   } catch (err) {
     console.error("Get user error:", err);
@@ -129,6 +135,4 @@ router.get("/me", authMiddleware, async (req, res) => {
   }
 });
 
-
 export default router;
-

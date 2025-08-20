@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Textfit } from "react-textfit";
 import axios from "axios";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Header from "../components/Header";
 
-// --- TYPE DEFINITIONS ---
 interface PokemonProducts {
   _id: string;
   name: string;
   number?: string;
   images?: { small?: string; large?: string };
   set?: { name?: string };
+  type?: string;
   tcgplayer?: {
     prices?: {
       normal?: { market?: number };
@@ -23,6 +22,7 @@ interface PokemonProducts {
   highestMarketPrice?: number;
 }
 type SortOrder = "price-desc" | "price-asc";
+type ItemType = "card" | "product" | "both";
 
 export default function DatabasePage() {
   const router = useRouter();
@@ -34,25 +34,37 @@ export default function DatabasePage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>(
     (searchParams.get("sort") as SortOrder) || "price-desc"
   );
+  const [itemType, setItemType] = useState<ItemType>(
+    (searchParams.get("type") as ItemType) || "card"
+  );
 
-  const fetchCards = useCallback(async (query: string, sort: SortOrder) => {
-    try {
-      const res = await axios.get<PokemonProducts[]>(
-        `http://localhost:5000/api/cards/search?q=${encodeURIComponent(query)}&sort=${sort}`
-      );
-      setCards(res.data);
-    } catch (err) {
-      console.error("Error fetching cards:", err);
-      setCards([]); // fallback to empty array
-    }
-  }, []);
+  const fetchCards = useCallback(
+    async (query: string, sort: SortOrder, type: ItemType) => {
+      try {
+        const res = await axios.get<PokemonProducts[]>(
+          `http://localhost:5000/api/cards/search?q=${encodeURIComponent(
+            query
+          )}&sort=${sort}&type=${type}`
+        );
+        setCards(res.data);
+      } catch (err) {
+        console.error("Error fetching cards:", err);
+        setCards([]);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     const query = searchParams.get("q") || "";
     const sort = (searchParams.get("sort") as SortOrder) || "price-desc";
+    const type = (searchParams.get("type") as ItemType) || "card";
+
     setSearchQuery(query);
     setSortOrder(sort);
-    fetchCards(query, sort);
+    setItemType(type);
+
+    fetchCards(query, sort, type);
   }, [searchParams, fetchCards]);
 
   const updateURLParams = useCallback(
@@ -78,41 +90,76 @@ export default function DatabasePage() {
     updateURLParams({ sort: newSortOrder });
   };
 
+  const handleTypeChange = (type: ItemType) => {
+    setItemType(type);
+    updateURLParams({ type });
+  };
+
   return (
-    <main className="p-6 min-h-screen" style={{ backgroundColor: "#343541", color: "#ECECF1" }}>
+    <main
+      className="px-6 sm:px-12 lg:px-24 py-6 min-h-screen"
+      style={{ backgroundColor: "#343541", color: "#ECECF1" }}
+    >
       <Header />
-      <div className="text-center mb-8">
-        <h2 className="text-4xl font-bold">Card Pricing Database</h2>
-        <p className="text-gray-400">Search and analyze prices from across the web.</p>
+
+      {/* Banner */}
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold">Card & Product Database</h2>
+        <p className="text-gray-400 text-sm">
+          Search and analyze prices from across the web.
+        </p>
       </div>
 
-      <div className="mb-6 flex justify-center items-center gap-3">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          placeholder="Search cards by name, number..."
-          className="w-full max-w-md px-3 py-2 rounded-md text-gray-800 bg-gray-100"
-        />
-        <select
-          value={sortOrder}
-          onChange={handleSortChange}
-          className="w-52 px-2 py-2 rounded-md text-gray-800 bg-gray-100"
-        >
-          <option value="price-desc">Price: High → Low</option>
-          <option value="price-asc">Price: Low → High</option>
-        </select>
+      {/* Search + Sort + Toggle */}
+      <div className="mb-6 flex flex-col gap-4 items-center">
+        <div className="flex gap-3 w-full max-w-2xl">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search cards or products..."
+            className="flex-1 px-3 py-2 rounded-md text-gray-800 bg-gray-100"
+          />
+          <select
+            value={sortOrder}
+            onChange={handleSortChange}
+            className="w-52 px-2 py-2 rounded-md text-gray-800 bg-gray-100"
+          >
+            <option value="price-desc">Price: High → Low</option>
+            <option value="price-asc">Price: Low → High</option>
+          </select>
+        </div>
+
+        <div className="flex gap-3">
+          {(["card", "product", "both"] as ItemType[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => handleTypeChange(t)}
+              className={`px-4 py-2 rounded-lg font-semibold transition ${
+                itemType === t
+                  ? "bg-blue-500 text-white shadow-lg"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              }`}
+            >
+              {t === "card" ? "Cards" : t === "product" ? "Products" : "Both"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6 justify-center">
+      {/* Cards Grid */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6 justify-center">
         {cards.map((card) => {
           const priceSegments: string[] = [];
 
-          // Show TCGPlayer prices if available
           if (card.tcgplayer?.prices?.normal?.market != null)
-            priceSegments.push(`Normal: $${card.tcgplayer.prices.normal.market.toFixed(2)}`);
+            priceSegments.push(
+              `Normal: $${card.tcgplayer.prices.normal.market.toFixed(2)}`
+            );
           if (card.tcgplayer?.prices?.holofoil?.market != null)
-            priceSegments.push(`Holofoil: $${card.tcgplayer.prices.holofoil.market.toFixed(2)}`);
+            priceSegments.push(
+              `Holofoil: $${card.tcgplayer.prices.holofoil.market.toFixed(2)}`
+            );
           if (card.highestMarketPrice != null && priceSegments.length === 0)
             priceSegments.push(`Market: $${card.highestMarketPrice.toFixed(2)}`);
 
@@ -120,22 +167,35 @@ export default function DatabasePage() {
             <div
               key={card._id}
               onClick={() => router.push(`/cards/${card._id}`)}
-              className="p-3 rounded-xl transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl bg-[#4B4B5A] flex flex-col items-center cursor-pointer"
+              className="p-2 rounded-xl transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl bg-[#4B4B5A] flex flex-col items-center cursor-pointer h-[420px] w-[240px]"
             >
-              <img
-                src={card.images?.small || "/placeholder.png"}
-                alt={card.name}
-                className="w-[220px] h-[300px] object-cover rounded-lg"
-              />
-              <div className="text-center w-full mt-2">
-                <Textfit mode="single" max={16} min={10} style={{ fontWeight: 600 }}>
+              {/* Enlarged Image */}
+              <div className="w-[230px] h-[290px] flex items-center justify-center bg-[#2F2F3A] rounded-lg overflow-hidden">
+                <img
+                  src={card.images?.small || "/placeholder.png"}
+                  alt={card.name}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+
+              {/* Info Section */}
+              <div className="text-center w-full mt-1 space-y-1">
+                <p
+                  className="font-semibold text-base text-white break-words whitespace-normal leading-tight line-clamp-2"
+                  title={card.name}
+                >
                   {card.name} {card.number ? `#${card.number}` : ""}
-                </Textfit>
-                <Textfit mode="single" max={12} min={8} style={{ color: "#C5C7D0" }}>
+                </p>
+                <p
+                  className="text-sm text-gray-300 break-words whitespace-normal"
+                  title={card.set?.name || ""}
+                >
                   {card.set?.name || ""}
-                </Textfit>
+                </p>
                 {priceSegments.length > 0 && (
-                  <p className="font-bold mt-1 text-green-400 text-sm">{priceSegments.join(" | ")}</p>
+                  <p className="font-bold text-green-400 text-sm">
+                    {priceSegments.join(" | ")}
+                  </p>
                 )}
               </div>
             </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -7,16 +6,24 @@ import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 
 // --- TYPE DEFINITIONS ---
+interface Seller {
+  _id: string;
+  username: string;
+  reputation: number;
+  reviewCount: number;
+}
+
 interface Listing {
   _id: string;
   cardName: string;
   price: number;
   imageUrls: string[];
-  seller: { _id: string; username: string; reputation: number; reviewCount: number; };
+  seller: Seller;
   listingType: 'raw' | 'graded';
   rawCondition?: string;
   gradedData?: { company: string; grade: string; };
 }
+
 type SortOrder = 'price-desc' | 'price-asc' | 'rep-desc';
 
 export default function MarketplacePage() {
@@ -24,6 +31,7 @@ export default function MarketplacePage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('price-desc');
   const router = useRouter();
 
+  // Fetch listings from backend
   const fetchListings = useCallback(async () => {
     try {
       const res = await axios.get<Listing[]>("http://localhost:5000/api/listings");
@@ -37,6 +45,7 @@ export default function MarketplacePage() {
     fetchListings();
   }, [fetchListings]);
 
+  // Handle sorting
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSortOrder = e.target.value as SortOrder;
     setSortOrder(newSortOrder);
@@ -52,19 +61,22 @@ export default function MarketplacePage() {
   return (
     <main className="p-6 min-h-screen" style={{ backgroundColor: "#343541", color: "#ECECF1" }}>
       <Header />
+      
+      {/* Header Section */}
       <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-4xl font-bold">Marketplace</h2>
-            <p className="text-gray-400">Browse listings from other trainers.</p>
-          </div>
-          <button
-              onClick={() => router.push('marketplace/listing/create')}
-              className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition"
-            >
-              + Create New Listing
-          </button>
+        <div>
+          <h2 className="text-4xl font-bold">Marketplace</h2>
+          <p className="text-gray-400">Browse listings from other trainers.</p>
+        </div>
+        <button
+          onClick={() => router.push('marketplace/listing/create')}
+          className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition"
+        >
+          + Create New Listing
+        </button>
       </div>
 
+      {/* Sorting */}
       <div className="mb-6 flex justify-end items-center gap-3">
         <select
           value={sortOrder}
@@ -77,26 +89,36 @@ export default function MarketplacePage() {
         </select>
       </div>
 
+      {/* Listings Grid */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-8 justify-center">
         {listings.map((listing) => {
           const conditionString = listing.listingType === 'raw'
             ? `Condition: ${listing.rawCondition}`
             : `Graded: ${listing.gradedData?.company} ${listing.gradedData?.grade}`;
+
+          const reputationDisplay = `${listing.seller.reputation ?? 100}% (${listing.seller.reviewCount ?? 0})`;
+
           return (
-            <div key={listing._id} className="p-4 rounded-xl bg-[#4B4B5A] flex flex-col items-center gap-3 transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl cursor-pointer">
-              <img 
+            <div
+              key={listing._id}
+              className="p-4 rounded-xl bg-[#4B4B5A] flex flex-col items-center gap-3 transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl cursor-pointer"
+            >
+              <img
                 src={`http://localhost:5000${listing.imageUrls[0]}`}
-                alt={listing.cardName} 
+                alt={listing.cardName}
                 className="w-full h-auto object-cover rounded-lg shadow-lg"
               />
+
               <div className="text-center w-full mt-2">
                 <h3 className="text-lg font-bold text-white truncate">{listing.cardName}</h3>
                 <p className="text-2xl font-black text-green-400 my-1">${listing.price.toFixed(2)}</p>
                 <p className="text-sm text-gray-300 font-medium">{conditionString}</p>
-                <div className="mt-3 pt-3 border-t border-gray-600 w-full text-xs">
-                  {/* THIS IS THE FIX */}
-                  <p className="text-gray-400">Seller: <span className="font-semibold text-white">{listing.seller.username}</span></p>
-                  <p className="text-gray-400">Rep: <span className="font-semibold text-white">{listing.seller.reputation}%</span></p>
+
+                {/* Seller Info with Bar */}
+                <div className="mt-3 pt-3 border-t border-gray-600 w-full text-xs flex items-center justify-center gap-2">
+                  <span className="text-gray-400 font-medium">Seller: <span className="font-semibold text-white">{listing.seller.username}</span></span>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-gray-400 font-medium">Rep: <span className="font-semibold text-white">{reputationDisplay}</span></span>
                 </div>
               </div>
             </div>
@@ -106,4 +128,3 @@ export default function MarketplacePage() {
     </main>
   );
 }
-

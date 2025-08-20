@@ -10,7 +10,7 @@ router.get("/search", async (req, res) => {
   try {
     const { q, sort, type } = req.query;
 
-    // Keyword search logic
+    // --- Keyword search ---
     let andConditions = [];
     if (q) {
       const keywords = q
@@ -31,32 +31,31 @@ router.get("/search", async (req, res) => {
 
     const finalQuery = andConditions.length > 0 ? { $and: andConditions } : {};
 
-    // --- Filter by type ---
+    // --- Type filter ---
     if (type === "card") {
       finalQuery.type = "card";
     } else if (type === "product") {
       finalQuery.type = "product";
-    }
+    } // if type==="both" or undefined → no filter
 
-    // Sorting logic
+    // --- Sorting ---
     let sortOptions = {};
-    const sortKey = 'highestMarketPrice';
-
+    const sortKey = "highestMarketPrice";
     switch (sort) {
-      case 'price-asc':
+      case "price-asc":
         sortOptions = { [sortKey]: 1 };
         break;
-      case 'price-desc':
+      case "price-desc":
       default:
         sortOptions = { [sortKey]: -1 };
         break;
     }
 
-    const cards = await PokemonProducts.find(finalQuery)
+    const results = await PokemonProducts.find(finalQuery)
       .sort(sortOptions)
       .limit(100);
 
-    res.json(cards);
+    res.json(results);
   } catch (err) {
     console.error("Error in card search:", err);
     res.status(500).json({ message: "Server error" });

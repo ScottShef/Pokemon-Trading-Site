@@ -1,6 +1,5 @@
-
 import express from 'express';
-import PokemonCard from '../models/PokemonCard.js';
+import PokemonProducts from '../models/PokemonProduct.js'; // uses productDb
 
 const router = express.Router();
 
@@ -10,10 +9,14 @@ router.get("/search", async (req, res) => {
   try {
     const { q, sort } = req.query;
 
-    // Keyword search logic (remains unchanged)
+    // Build keyword search
     let andConditions = [];
     if (q) {
-      const keywords = q.split(/\s+/).map(kw => kw.trim().toLowerCase()).filter(kw => kw && !STOP_WORDS.includes(kw));
+      const keywords = q
+        .split(/\s+/)
+        .map(kw => kw.trim().toLowerCase())
+        .filter(kw => kw && !STOP_WORDS.includes(kw));
+
       andConditions = keywords.map(keyword => ({
         $or: [
           { name: { $regex: keyword, $options: "i" } },
@@ -24,25 +27,25 @@ router.get("/search", async (req, res) => {
         ],
       }));
     }
+
     const finalQuery = andConditions.length > 0 ? { $and: andConditions } : {};
 
-    // --- FIX: Define the sorting logic based on the new top-level field ---
+    // Sorting
     let sortOptions = {};
-    
-    // This is the only line that needs to change.
-    const sortKey = 'highestMarketPrice'; 
+    const sortKey = 'highestMarketPrice';
 
     switch (sort) {
       case 'price-asc':
-        sortOptions = { [sortKey]: 1 }; // Sort ascending by highestMarketPrice
+        sortOptions = { [sortKey]: 1 };
         break;
       case 'price-desc':
       default:
-        sortOptions = { [sortKey]: -1 }; // Sort descending by highestMarketPrice
+        sortOptions = { [sortKey]: -1 };
         break;
     }
 
-    const cards = await PokemonCard.find(finalQuery)
+    // Fetch from product DB
+    const cards = await PokemonProducts.find(finalQuery)
       .sort(sortOptions)
       .limit(100);
 
@@ -54,4 +57,3 @@ router.get("/search", async (req, res) => {
 });
 
 export default router;
-

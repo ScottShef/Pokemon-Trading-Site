@@ -1,6 +1,6 @@
 
 import express from 'express';
-import PokemonCard from '../models/PokemonCard.js'; // Note the import change
+import PokemonCard from '../models/PokemonProduct.js'; // Note the import change
 
 const router = express.Router();
 

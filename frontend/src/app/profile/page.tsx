@@ -1,266 +1,185 @@
-
 "use client";
 
-import { useState, useEffect } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation"; // Import the router hook
-
-type Tab = "listings" | "watchlist" | "reviews" | "purchases" | "profileSettings";
+import { useEffect, useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import axios, { AxiosError } from "axios";
+import { UserProfile } from "@/types/user";
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<Tab>("listings");
-  const router = useRouter(); // Initialize the router
+  const router = useRouter();
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // State for the change password form
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; content: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // The handleBackHome function is no longer needed.
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+
+    if (!token || !userData) {
+      // If no token or user data, redirect to login page.
+      router.push("/login");
+    } else {
+      // If token exists, parse user data and set loading to false.
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error("Failed to parse user data from localStorage", error);
+        // If parsing fails, treat as unauthenticated
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    // Clear authentication data from storage
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    // Redirect to the login page
+    router.push("/login");
+  };
+
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+
+    if (newPassword !== confirmNewPassword) {
+      setMessage({ type: 'error', content: "New passwords do not match." });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setMessage({ type: 'error', content: "New password must be at least 6 characters long." });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const token = localStorage.getItem("token");
+
+    try {
+      await axios.post(
+        "/api/auth/change-password",
+        { oldPassword, newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setMessage({ type: 'success', content: "Password changed successfully!" });
+      // Clear form fields on success
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+
+    } catch (err) {
+      const axiosError = err as AxiosError<{ error: string }>;
+      const errorMessage = axiosError.response?.data?.error || "An unexpected error occurred.";
+      setMessage({ type: 'error', content: errorMessage });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <p className="text-white text-xl">Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className="min-h-screen p-6"
-      style={{ backgroundColor: "#343541", color: "#ECECF1" }}
-    >
-      {/* Back to Home Button (Corrected) */}
-      <button
-        onClick={() => router.back()} // Use router.back() for proper navigation
-        className="mb-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-      >
-        &larr; Back to Home
-      </button>
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl p-8 space-y-8 bg-gray-800 rounded-lg shadow-lg">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-purple-400">Welcome, {user?.username}!</h1>
+            <p className="text-gray-400 mt-1">Email: {user?.email}</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 font-bold text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-red-500"
+          >
+            Logout
+          </button>
+        </div>
 
-      <h1 className="text-3xl font-bold mb-6">Profile</h1>
+        {/* Change Password Form */}
+        <div className="border-t border-gray-700 pt-8">
+          <h2 className="text-2xl font-bold text-purple-400 mb-4">Change Password</h2>
+          
+          {message && (
+            <p className={`p-3 rounded-md text-center mb-4 ${message.type === 'success' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+              {message.content}
+            </p>
+          )}
 
-      {/* The rest of your component remains exactly the same */}
-      {/* Tabs */}
-      <div className="flex space-x-2 mb-6 border-b border-gray-600">
-          <TabButton label="Current Listings" tab="listings" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <TabButton label="Watchlist" tab="watchlist" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <TabButton label="Reviews" tab="reviews" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <TabButton label="Purchases" tab="purchases" activeTab={activeTab} setActiveTab={setActiveTab} />
-          <TabButton label="Profile Settings" tab="profileSettings" activeTab={activeTab} setActiveTab={setActiveTab} />
-      </div>
-
-      {/* Tab Content */}
-      <div className="p-4 rounded-xl shadow" style={{ backgroundColor: "#444654" }}>
-        {activeTab === "listings" && <CurrentListings />}
-        {activeTab === "watchlist" && <Watchlist />}
-        {activeTab === "reviews" && <Reviews />}
-        {activeTab === "purchases" && <Purchases />}
-        {activeTab === "profileSettings" && <ProfileSettings />}
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div>
+              <label
+                htmlFor="oldPassword"
+                className="block mb-2 text-sm font-medium text-gray-300"
+              >
+                Old Password
+              </label>
+              <input
+                type="password"
+                id="oldPassword"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="newPassword"
+                className="block mb-2 text-sm font-medium text-gray-300"
+              >
+                New Password
+              </label>
+              <input
+                type="password"
+                id="newPassword"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="confirmNewPassword"
+                className="block mb-2 text-sm font-medium text-gray-300"
+              >
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                id="confirmNewPassword"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full px-4 py-2 font-bold text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:bg-gray-500"
+            >
+              {isSubmitting ? "Changing..." : "Change Password"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-
-// ... (The rest of your components: TabButton, CurrentListings, ProfileSettings, etc. do not need any changes)
-// ...
-
-// --------------------
-// Tab Button Component
-// --------------------
-interface TabButtonProps {
-    label: string;
-    tab: Tab;
-    activeTab: Tab;
-    setActiveTab: (tab: Tab) => void;
-  }
-  
-  function TabButton({ label, tab, activeTab, setActiveTab }: TabButtonProps) {
-    return (
-      <button
-        onClick={() => setActiveTab(tab)}
-        className={`px-4 py-2 rounded-t-lg font-semibold transition ${
-          activeTab === tab
-            ? "bg-gray-700 text-white"
-            : "text-gray-400 hover:text-white"
-        }`}
-      >
-        {label}
-      </button>
-    );
-  }
-  
-  // --------------------
-  // Tab Content Components (placeholders)
-  // --------------------
-  function CurrentListings() {
-    return (
-      <div>
-        <h2 className="text-xl font-bold mb-2">Current Listings</h2>
-        <p>Your active listings will be displayed here.</p>
-      </div>
-    );
-  }
-  
-  function Watchlist() {
-    return (
-      <div>
-        <h2 className="text-xl font-bold mb-2">Watchlist</h2>
-        <p>Items you are watching will appear here.</p>
-      </div>
-    );
-  }
-  
-  function Reviews() {
-    return (
-      <div>
-        <h2 className="text-xl font-bold mb-2">Reviews</h2>
-        <p>Your reviews and ratings will be displayed here.</p>
-      </div>
-    );
-  }
-  
-  function Purchases() {
-    return (
-      <div>
-        <h2 className="text-xl font-bold mb-2">Purchases</h2>
-        <p>History of items you have bought will appear here.</p>
-      </div>
-    );
-  }
-  
-  // --------------------
-  // Profile Settings Tab
-  // --------------------
-  function ProfileSettings() {
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [message, setMessage] = useState("");
-  
-    // Toggle password visibility
-    const [showCurrent, setShowCurrent] = useState(false);
-    const [showNew, setShowNew] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
-  
-    useEffect(() => {
-      const fetchUser = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) return;
-          const res = await axios.get("http://localhost:5000/api/auth/me", {
-            headers: { 'x-auth-token': token },
-          });
-          setUsername(res.data.user.username);
-          setEmail(res.data.user.email);
-        } catch (err) {
-          console.error("Failed to fetch user:", err);
-        }
-      };
-      fetchUser();
-    }, []);
-  
-    const handlePasswordChange = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setMessage("");
-      if (newPassword !== confirmPassword) {
-        setMessage("Passwords do not match");
-        return;
-      }
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.put(
-          "http://localhost:5000/api/auth/change-password",
-          { currentPassword, newPassword },
-          { headers: { 'x-auth-token': token } }
-        );
-        setMessage(res.data.message || "Password updated successfully");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      } catch (err: any) {
-        setMessage(err.response?.data?.error || "Failed to update password");
-        console.error(err.response?.data);
-      }
-    };
-  
-    return (
-      <div>
-        <h2 className="text-xl font-bold mb-4">Profile Settings</h2>
-        <div className="mb-4">
-          <p><strong>Username:</strong> {username}</p>
-          <p><strong>Email:</strong> {email}</p>
-        </div>
-        <form onSubmit={handlePasswordChange} className="space-y-3">
-          {/* Current Password */}
-          <div>
-            <label className="block font-semibold">Current Password:</label>
-            <div className="relative">
-              <input
-                type={showCurrent ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
-                placeholder="Enter current password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrent(!showCurrent)}
-                className="absolute right-2 top-2 text-gray-300 hover:text-white"
-              >
-                {showCurrent ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
-  
-          {/* New Password */}
-          <div>
-            <label className="block font-semibold">New Password:</label>
-            <div className="relative">
-              <input
-                type={showNew ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
-                placeholder="Enter new password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowNew(!showNew)}
-                className="absolute right-2 top-2 text-gray-300 hover:text-white"
-              >
-                {showNew ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
-  
-          {/* Confirm New Password */}
-          <div>
-            <label className="block font-semibold">Confirm New Password:</label>
-            <div className="relative">
-              <input
-                type={showConfirm ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-2 rounded bg-gray-700 text-white border border-gray-600"
-                placeholder="Re-enter new password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-2 top-2 text-gray-300 hover:text-white"
-              >
-                {showConfirm ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
-  
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Update Password
-          </button>
-        </form>
-        {message && (
-          <p className="mt-3" style={{ color: message.includes("success") ? "green" : "red" }}>
-            {message}
-          </p>
-        )}
-      </div>
-    );
-  }
 

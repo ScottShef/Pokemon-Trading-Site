@@ -1,304 +1,210 @@
 "use client";
 
-import { useState, FormEvent, ChangeEvent } from "react";
-import axios from "axios";
+import { useState, FormEvent } from "react";
+import axios, { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
+import { UserProfile } from "@/types/user";
 
-interface RegisterForm {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
-interface ValidationErrors {
-  username?: string;
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
+// Define the structure for the API response on successful registration
+interface RegisterResponse {
+  message: string;
+  token: string;
+  user: UserProfile;
 }
 
 export default function RegisterPage() {
-  const [form, setForm] = useState<RegisterForm>({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [errors, setErrors] = useState<ValidationErrors>({});
-  const [message, setMessage] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
-
-  const validateField = (name: string, value: string) => {
-    let error = "";
-    switch (name) {
-      case "username":
-        if (!value.trim()) error = "Username is required";
-        break;
-      case "email":
-        if (!value.trim()) error = "Email is required";
-        else if (!/^[\w.-]+@[a-zA-Z\d.-]+\.[a-zA-Z]{2,}$/.test(value))
-          error = "Invalid email format";
-        break;
-      case "password":
-        if (!value) error = "Password is required";
-        else if (value.length < 6) error = "Password must be at least 6 characters";
-        break;
-      case "confirmPassword":
-        if (!value) error = "Please confirm your password";
-        else if (value !== form.password) error = "Passwords do not match";
-        break;
-    }
-    setErrors((prev) => ({ ...prev, [name]: error }));
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    validateField(name, value);
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setMessage("");
-    Object.entries(form).forEach(([name, value]) => validateField(name, value));
-    if (Object.values(errors).some((err) => err)) return;
+    setError(null);
+
+    // Client-side validation
+    if (!username || !email || !password || !confirmPassword) {
+      setError("All fields are required.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", {
-        username: form.username,
-        email: form.email,
-        password: form.password,
+      // The API endpoint is now a relative path to our Next.js API route.
+      const res = await axios.post<RegisterResponse>("/api/auth/register", {
+        username,
+        email,
+        password,
       });
 
-      setMessage(res.data.message || "Registered successfully!");
-      setForm({ username: "", email: "", password: "", confirmPassword: "" });
-      setErrors({});
+      // On success, store the token and user info, same as login.
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      // After successful registration
-      const { token, user } = res.data;
-
-      // Save token for authenticated requests
-      localStorage.setItem("token", token);
-
-      // Optional: save user info for immediate use
-      localStorage.setItem("username", user.username);
-      localStorage.setItem("email", user.email);
-
-      // Redirect to home page
-      router.push("/");
-    } catch (err: any) {
-      setMessage(err.response?.data?.error || "Something went wrong");
-      console.error("Backend error:", err.response?.data);
+      // Redirect to the profile page after successful registration.
+      router.push("/profile");
+    } catch (err) {
+      const axiosError = err as AxiosError<{ error: string }>;
+      const errorMessage =
+        axiosError.response?.data?.error ||
+        "An unexpected error occurred. Please try again.";
+      setError(errorMessage);
+      console.error("Registration failed:", axiosError.response?.data);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#343541",
-        color: "#ECECF1",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "400px",
-          width: "100%",
-          padding: "30px",
-          borderRadius: "12px",
-          backgroundColor: "#444654",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-        }}
-      >
-        <h1 style={{ textAlign: "center", fontSize: "2xl", marginBottom: "20px" }}>Create Account</h1>
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-center text-purple-400">
+          Create Your Account
+        </h1>
 
-        {message && (
-          <p
-            style={{
-              color: message.toLowerCase().includes("success") ? "#4ade80" : "#f87171",
-              textAlign: "center",
-              marginBottom: "15px",
-            }}
-          >
-            {message}
+        {error && (
+          <p className="text-red-400 bg-red-900/30 p-3 rounded-md text-center">
+            {error}
           </p>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {/* Username */}
-          <div style={{ marginBottom: "15px" }}>
-            <label htmlFor="username" style={{ fontWeight: "bold", display: "block" }}>Username:</label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="username"
+              className="block mb-2 text-sm font-medium text-gray-300"
+            >
+              Username
+            </label>
             <input
               type="text"
               name="username"
               id="username"
-              value={form.username}
-              onChange={handleChange}
-              placeholder="Enter your username"
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#5a5c6c",
-                color: "#ECECF1",
-              }}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="your_username"
+              autoComplete="username"
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            {errors.username && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.username}</p>}
           </div>
 
-          {/* Email */}
-          <div style={{ marginBottom: "15px" }}>
-            <label htmlFor="email" style={{ fontWeight: "bold", display: "block" }}>Email:</label>
+          <div>
+            <label
+              htmlFor="email"
+              className="block mb-2 text-sm font-medium text-gray-300"
+            >
+              Email
+            </label>
             <input
               type="email"
               name="email"
               id="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#5a5c6c",
-                color: "#ECECF1",
-              }}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="user@email.com"
+              autoComplete="email"
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            {errors.email && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.email}</p>}
           </div>
 
-          {/* Password */}
-          <div style={{ position: "relative", marginBottom: "15px" }}>
-            <label htmlFor="password" style={{ fontWeight: "bold", display: "block" }}>Password:</label>
+          <div className="relative">
+            <label
+              htmlFor="password"
+              className="block mb-2 text-sm font-medium text-gray-300"
+            >
+              Password
+            </label>
             <input
               type={showPassword ? "text" : "password"}
               name="password"
               id="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              style={{
-                width: "100%",
-                padding: "10px 40px 10px 10px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#5a5c6c",
-                color: "#ECECF1",
-              }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: "absolute",
-                right: "10px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                color: "#10b981",
-                cursor: "pointer",
-              }}
+              className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-gray-400 hover:text-purple-400"
             >
-              {showPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+              {showPassword ? (
+                <HiOutlineEyeOff size={20} />
+              ) : (
+                <HiOutlineEye size={20} />
+              )}
             </button>
-            {errors.password && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.password}</p>}
           </div>
 
-          {/* Confirm Password */}
-          <div style={{ position: "relative", marginBottom: "20px" }}>
-            <label htmlFor="confirmPassword" style={{ fontWeight: "bold", display: "block" }}>Confirm Password:</label>
+          <div className="relative">
+            <label
+              htmlFor="confirmPassword"
+              className="block mb-2 text-sm font-medium text-gray-300"
+            >
+              Confirm Password
+            </label>
             <input
-              type={showConfirm ? "text" : "password"}
+              type={showConfirmPassword ? "text" : "password"}
               name="confirmPassword"
               id="confirmPassword"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Re-enter your password"
-              style={{
-                width: "100%",
-                padding: "10px 40px 10px 10px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#5a5c6c",
-                color: "#ECECF1",
-              }}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <button
               type="button"
-              onClick={() => setShowConfirm(!showConfirm)}
-              style={{
-                position: "absolute",
-                right: "10px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                color: "#10b981",
-                cursor: "pointer",
-              }}
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-gray-400 hover:text-purple-400"
             >
-              {showConfirm ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+              {showConfirmPassword ? (
+                <HiOutlineEyeOff size={20} />
+              ) : (
+                <HiOutlineEye size={20} />
+              )}
             </button>
-            {errors.confirmPassword && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.confirmPassword}</p>}
           </div>
 
           <button
             type="submit"
-            style={{
-              width: "100%",
-              padding: "12px",
-              fontWeight: "bold",
-              backgroundColor: "#10b981",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
+            disabled={loading}
+            className="w-full px-4 py-2 font-bold text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
-            Register
+            {loading ? "Creating Account..." : "Register"}
           </button>
-
-          {/* Back to Home */}
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginTop: "10px",
-              fontWeight: "bold",
-              backgroundColor: "#6b7280",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            &larr; Back to Home
-          </button>
-
-          {/* Already have account */}
-          <p style={{ marginTop: "10px", textAlign: "center" }}>
-            Already have an account?{" "}
-            <span
-              onClick={() => router.push("/login")}
-              style={{ color: "#10b981", cursor: "pointer", fontWeight: "bold" }}
-            >
-              Login
-            </span>
-          </p>
         </form>
+
+        <p className="text-sm text-center text-gray-400">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-purple-400 hover:underline"
+          >
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   );

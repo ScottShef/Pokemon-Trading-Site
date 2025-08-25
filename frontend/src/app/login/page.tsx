@@ -1,239 +1,150 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent, ChangeEvent } from "react";
-import axios from "axios";
+import { useState, FormEvent } from "react";
+import axios, { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
+// Import the UserProfile type for the expected response
+import { UserProfile } from "@/types/user";
 
-interface LoginForm {
-  identifier: string;
-  password: string;
-}
-
-interface ValidationErrors {
-  identifier?: string;
-  password?: string;
+// Define the structure for the API response on successful login
+interface LoginResponse {
+  message: string;
+  token: string;
+  user: UserProfile;
 }
 
 export default function LoginPage() {
-  const [form, setForm] = useState<LoginForm>({ identifier: "", password: "" });
-  const [errors, setErrors] = useState<ValidationErrors>({});
-  const [message, setMessage] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  // Refs to inputs for detecting autofill
-  const identifierRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-
-  // Sync React state with autofilled values
-  useEffect(() => {
-    if (identifierRef.current && identifierRef.current.value) {
-      setForm((prev) => ({ ...prev, identifier: identifierRef.current!.value }));
-    }
-    if (passwordRef.current && passwordRef.current.value) {
-      setForm((prev) => ({ ...prev, password: passwordRef.current!.value }));
-    }
-  }, []);
-
-  // Validate form fields
-  const validateField = (name: string, value: string) => {
-    let error = "";
-    if (name === "identifier" && !value.trim()) error = "Username or Email is required";
-    if (name === "password" && !value) error = "Password is required";
-    setErrors((prev) => ({ ...prev, [name]: error }));
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    validateField(name, value);
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setMessage("");
+    setError(null); // Reset error message on new submission
 
-    // Make sure we get the latest values from refs (autofill workaround)
-    const identifier = identifierRef.current?.value || "";
-    const password = passwordRef.current?.value || "";
-    setForm({ identifier, password });
+    // Basic client-side validation
+    if (!identifier || !password) {
+      setError("Both username/email and password are required.");
+      return;
+    }
 
-    Object.entries({ identifier, password }).forEach(([name, value]) => validateField(name, value));
-    if (!identifier || !password || Object.values(errors).some((err) => err)) return;
+    setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
+      // The API endpoint is now a relative path to our Next.js API route.
+      const res = await axios.post<LoginResponse>("/api/auth/login", {
         identifier,
         password,
       });
 
+      // On success, store the token and user info in localStorage.
+      // This makes it available for subsequent authenticated requests.
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("username", res.data.user.username);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      setMessage(res.data.message || "Login successful!");
-      setForm({ identifier: "", password: "" });
-      setErrors({});
-
-      router.push("/");
-    } catch (err: any) {
-      setMessage(err.response?.data?.error || "Something went wrong");
-      console.error("Backend error:", err.response?.data);
+      // Redirect to the user's profile page or home page after successful login.
+      router.push("/profile");
+    } catch (err) {
+      const axiosError = err as AxiosError<{ error: string }>;
+      // Set a user-friendly error message from the API response.
+      const errorMessage =
+        axiosError.response?.data?.error ||
+        "An unexpected error occurred. Please try again.";
+      setError(errorMessage);
+      console.error("Login failed:", axiosError.response?.data);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#343541",
-        color: "#ECECF1",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "400px",
-          width: "100%",
-          padding: "30px",
-          borderRadius: "12px",
-          backgroundColor: "#444654",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-        }}
-      >
-        <h1 style={{ textAlign: "center", fontSize: "2xl", marginBottom: "20px" }}>Login</h1>
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-center text-purple-400">
+          Login to Your Account
+        </h1>
 
-        {message && (
-          <p
-            style={{
-              color: message.toLowerCase().includes("success") ? "#4ade80" : "#f87171",
-              textAlign: "center",
-              marginBottom: "15px",
-            }}
-          >
-            {message}
+        {error && (
+          <p className="text-red-400 bg-red-900/30 p-3 rounded-md text-center">
+            {error}
           </p>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {/* Username or Email */}
-          <div style={{ marginBottom: "15px" }}>
-            <label htmlFor="identifier" style={{ fontWeight: "bold", display: "block" }}>
-              Username or Email:
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label
+              htmlFor="identifier"
+              className="block mb-2 text-sm font-medium text-gray-300"
+            >
+              Username or Email
             </label>
             <input
-              ref={identifierRef}
               type="text"
               name="identifier"
               id="identifier"
-              value={form.identifier}
-              onChange={handleChange}
-              placeholder="Enter username or email"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="your_username or user@email.com"
               autoComplete="username"
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#5a5c6c",
-                color: "#ECECF1",
-              }}
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            {errors.identifier && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.identifier}</p>}
           </div>
 
-          {/* Password */}
-          <div style={{ position: "relative", marginBottom: "20px" }}>
-            <label htmlFor="password" style={{ fontWeight: "bold", display: "block" }}>
-              Password:
+          <div className="relative">
+            <label
+              htmlFor="password"
+              className="block mb-2 text-sm font-medium text-gray-300"
+            >
+              Password
             </label>
             <input
-              ref={passwordRef}
               type={showPassword ? "text" : "password"}
               name="password"
               id="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
               autoComplete="current-password"
-              style={{
-                width: "100%",
-                padding: "10px 40px 10px 10px",
-                borderRadius: "6px",
-                border: "none",
-                backgroundColor: "#5a5c6c",
-                color: "#ECECF1",
-              }}
+              required
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: "absolute",
-                right: "10px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                color: "#10b981",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
+              className="absolute inset-y-0 right-0 top-7 pr-3 flex items-center text-gray-400 hover:text-purple-400"
             >
-              {showPassword ? <HiOutlineEyeOff size={20} /> : <HiOutlineEye size={20} />}
+              {showPassword ? (
+                <HiOutlineEyeOff size={20} />
+              ) : (
+                <HiOutlineEye size={20} />
+              )}
             </button>
-            {errors.password && <p style={{ color: "#f87171", fontSize: "12px" }}>{errors.password}</p>}
           </div>
 
           <button
             type="submit"
-            style={{
-              width: "100%",
-              padding: "12px",
-              fontWeight: "bold",
-              backgroundColor: "#10b981",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
+            disabled={loading}
+            className="w-full px-4 py-2 font-bold text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
-
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginTop: "10px",
-              fontWeight: "bold",
-              backgroundColor: "#6b7280",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
-          >
-            &larr; Back to Home
-          </button>
-
-          <p style={{ marginTop: "10px", textAlign: "center" }}>
-            Don’t have an account?{" "}
-            <span
-              onClick={() => router.push("/register")}
-              style={{ color: "#10b981", cursor: "pointer", fontWeight: "bold" }}
-            >
-              Register
-            </span>
-          </p>
         </form>
+
+        <p className="text-sm text-center text-gray-400">
+          Don’t have an account?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-purple-400 hover:underline"
+          >
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   );

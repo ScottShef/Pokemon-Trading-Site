@@ -3,6 +3,7 @@
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "jose": "^6.0.13",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.1"
   },
@@ -10,4 +11,3 @@
     "nodemon": "^3.1.10"
   }
 }
-

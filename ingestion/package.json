@@ -12,6 +12,7 @@
     "scheduler:dev": "ts-node --watch schedulers/main-scheduler.ts",
     "db:status": "ts-node scripts/check-status.ts",
     "db:cleanup": "ts-node scripts/cleanup-db.ts",
+    "db:extract-pricing": "ts-node scripts/extract-pricing.ts",
     "dev": "ts-node --watch pokemon-cards/ingest-cards.ts",
     "dev:status": "ts-node --watch scripts/check-status.ts"
   },

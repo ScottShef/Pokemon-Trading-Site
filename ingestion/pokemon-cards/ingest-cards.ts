@@ -214,6 +214,27 @@ async function fetchCardsFromSet(setId: string, limit: number = 50) {
   }
 }
 
+// Calculate highest market price from TCGPlayer pricing sources only
+function calculateHighestMarketPrice(product: any): number | null {
+  const prices: number[] = [];
+
+  // Extract TCGPlayer prices only
+  if (product.tcgplayer?.prices) {
+    const tcgPrices = product.tcgplayer.prices;
+    
+    // Check market prices for different card types
+    if (tcgPrices.normal?.market && tcgPrices.normal.market > 0) 
+      prices.push(tcgPrices.normal.market);
+    if (tcgPrices.holofoil?.market && tcgPrices.holofoil.market > 0) 
+      prices.push(tcgPrices.holofoil.market);
+    if (tcgPrices.reverseHolofoil?.market && tcgPrices.reverseHolofoil.market > 0) 
+      prices.push(tcgPrices.reverseHolofoil.market);
+  }
+
+  // Return the highest price found, or null if no valid prices
+  return prices.length > 0 ? Math.max(...prices) : null;
+}
+
 // Store comprehensive product data
 async function storeProducts(products: any[]) {
   if (products.length === 0) {
@@ -225,6 +246,9 @@ async function storeProducts(products: any[]) {
   
   for (const product of products) {
     try {
+      // Calculate the highest market price from all pricing sources
+      const calculatedHighestPrice = calculateHighestMarketPrice(product);
+      
       // Parse date fields
       const parseDate = (dateStr: any) => {
         if (!dateStr) return null;
@@ -262,7 +286,7 @@ async function storeProducts(products: any[]) {
           product.set?.legalities?.expanded || null,
           
           product.images?.small || null,
-          product.highestMarketPrice || null,
+          calculatedHighestPrice, // Use our calculated price instead of API value
           
           product.tcgplayer ? JSON.stringify(product.tcgplayer) : null,
           parseDate(product.tcgplayer?.updatedAt),

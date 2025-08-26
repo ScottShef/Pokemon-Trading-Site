@@ -47,8 +47,8 @@ export default function LoginPage() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      // Redirect to the user's profile page or home page after successful login.
-      router.push("/profile");
+      // Redirect to the marketplace page after successful login.
+      router.push("/marketplace");
     } catch (err) {
       const axiosError = err as AxiosError<{ error: string }>;
       // Set a user-friendly error message from the API response.

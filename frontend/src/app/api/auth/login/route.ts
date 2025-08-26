@@ -5,25 +5,30 @@ import { SignJWT } from "jose";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, identifier, password } = await request.json();
+
+    // Accept either 'email', 'identifier', or both
+    const loginIdentifier = email || identifier;
 
     // Validate input
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Email/username and password are required" },
         { status: 400 }
       );
     }
 
-    // Find user by email
+    // Find user by email OR username
     const result = await executeQuery(
-      "SELECT id, username, email, password, reputation, review_count FROM users WHERE email = ?",
-      [email]
+      `SELECT id, username, email, password, reputation, review_count 
+       FROM users 
+       WHERE email = ? OR username = ?`,
+      [loginIdentifier, loginIdentifier]
     );
 
     if (result.rows.length === 0) {
       return NextResponse.json(
-        { error: "Invalid email or password" },
+        { error: "Invalid email/username or password" },
         { status: 401 }
       );
     }
@@ -35,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: "Invalid email or password" },
+        { error: "Invalid email/username or password" },
         { status: 401 }
       );
     }

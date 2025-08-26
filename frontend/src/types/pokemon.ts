@@ -6,93 +6,92 @@
  */
 
 // Defines the structure for various price points from different vendors.
-export interface IPrice {
-  low: number | null;
-  mid: number | null;
-  high: number | null;
-  market: number | null;
-  directLow: number | null;
-  // Cardmarket specific
+export interface IPriceData {
+  low?: number | null;
+  mid?: number | null;
+  high?: number | null;
+  market?: number | null;
+  directLow?: number | null;
   averageSellPrice?: number;
   trendPrice?: number;
   reverseHoloTrend?: number;
-  // TCGPlayer specific
-  lowPrice?: number;
-  reverseHoloLow?: number;
 }
 
-// Defines the structure for pricing data from TCGPlayer.
 export interface ITCGPlayer {
-  url: string | null;
-  updatedAt: string | null; // ISO Date string
-  prices: {
-    normal?: IPrice;
-    holofoil?: IPrice;
-    reverseHolofoil?: IPrice;
-    // Add other potential finishes if they exist in your data
+  url?: string | null;
+  updatedAt?: string | null;
+  prices?: {
+    normal?: IPriceData;
+    holofoil?: IPriceData;
+    reverseHolofoil?: IPriceData;
   };
 }
 
-// Defines the structure for the card's set information.
 export interface ICardSet {
-  id: string | null;
-  name: string | null;
-  series: string | null;
-  releaseDate: string | null; // ISO Date string
+  id?: string | null;
+  name?: string | null;
+  series?: string | null;
+  releaseDate?: string | null;
 }
 
-// Defines the structure for pricing data from Cardmarket.
 export interface ICardMarket {
-  url: string | null;
-  updatedAt: string | null; // ISO Date string
-  prices: IPrice;
+  url?: string | null;
+  updatedAt?: string | null;
+  prices?: IPriceData;
 }
 
-// Defines the structure for pricing data from eBay.
-// The keys for `prices` can be dynamic (e.g., "Grade 7", "Ungraded").
-export interface IEbay {
-  updatedAt: string | null; // ISO Date string
-  prices: Record<string, {
-    grade?: string;
-    average?: number;
-    count?: number;
+export interface IEbayListing {
+    grade?: number;
+    updated?: string;
     url?: string;
-  }>;
+    stats?: {
+        min?: number;
+        max?: number;
+        average?: number;
+        median?: number;
+        count?: number;
+    }
 }
 
-// This is the main interface for a Pokémon card document as stored in MongoDB.
-// It combines all the sub-interfaces into a single, comprehensive structure.
+export interface IEbay {
+  updatedAt?: string | null;
+  prices?: Record<string, IEbayListing>;
+}
+
 export interface IPokemonCard {
-  _id: { $oid: string }; // MongoDB Object ID
-  apiId: string; // The ID from the external Pokémon TCG API
-  name: string;
-  number: string | null;
-  rarity: string | null;
-  images: {
-    small: string | null;
-    large: string | null;
-  };
-  set: ICardSet;
-  cardmarket: ICardMarket;
-  tcgplayer: ITCGPlayer;
-  ebay: IEbay;
-  lastUpdated: { $date: string }; // MongoDB Date format
-  createdAt: { $date: string };
-  updatedAt: { $date: string };
-}
-
-// Defines a leaner version of the card data specifically for search results.
-// This helps reduce the payload size and ensures components only receive the data they need.
-export interface ICardSearchResult {
-  _id: { $oid: string };
+  _id: string;
   apiId: string;
   name: string;
-  rarity: string | null;
-  images: {
-    small: string | null;
+  number?: string | null;
+  rarity?: string | null;
+  images?: {
+    small?: string | null;
+    large?: string | null;
   };
-  set: {
-    name: string | null;
+  set?: ICardSet;
+  cardmarket?: ICardMarket;
+  tcgplayer?: ITCGPlayer;
+  ebay?: IEbay;
+  lastUpdated?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  highestMarketPrice?: number;
+}
+
+export interface ICardSearchResult {
+  id: string;
+  name: string;
+  image?: string | null;
+  set?: {
+    name?: string | null;
+  };
+  number?: string;
+  rarity?: string;
+  artist?: string;
+  prices?: {
+    tcgplayer?: any;
+    cardmarket?: any;
+    ebay?: any;
   };
 }
 

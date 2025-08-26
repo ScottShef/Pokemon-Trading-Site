@@ -3,22 +3,31 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { UserProfile } from '@/types/user';
 
 export default function Header() {
-  const [username, setUsername] = useState<string | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) setUsername(storedUsername);
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+      }
+    }
   }, []);
 
   const handleSignOut = () => {
-    localStorage.removeItem("username");
+    localStorage.removeItem("user");
     localStorage.removeItem("token");
-    setUsername(null);
-    router.push("/"); // Redirect to home after sign out
+    setUser(null);
+    router.push("/login");
   };
 
   return (
@@ -31,14 +40,14 @@ export default function Header() {
 
         {/* Authentication Buttons */}
         <div className="flex items-center space-x-2">
-          {!username ? (
+          {!user ? (
             <>
               <button onClick={() => router.push("/register")} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Register</button>
               <button onClick={() => router.push("/login")} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Login</button>
             </>
           ) : (
             <>
-              <span className="px-4 py-2 bg-gray-700 text-white rounded cursor-pointer" onClick={() => router.push("/profile")}>{username}</span>
+              <span className="px-4 py-2 bg-gray-700 text-white rounded cursor-pointer" onClick={() => router.push("/profile")}>{user.username}</span>
               <button onClick={handleSignOut} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Sign Out</button>
             </>
           )}

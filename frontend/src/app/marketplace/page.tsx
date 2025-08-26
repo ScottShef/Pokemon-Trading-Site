@@ -5,7 +5,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "../../components/Header";
-import { IListing } from "@/types/listing"; // Import the new IListing type
+import { IListing } from "@/types/listing";
 
 type SortOrder = 'price-desc' | 'price-asc' | 'createdAt-desc';
 
@@ -16,15 +16,12 @@ export default function MarketplacePage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fetch listings from the new API route
   const fetchListings = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Use the relative path to our Next.js API route
-      const res = await axios.get<{ documents: IListing[] }>("/api/listings");
-      // The MongoDB Data API wraps the result in a 'documents' array
-      setListings(res.data.documents || []);
+      const res = await axios.get("/api/listings");
+      setListings(res.data?.listings || []);
     } catch (err) {
       console.error("Error fetching listings:", err);
       setError("Failed to load listings. Please try again later.");
@@ -37,7 +34,6 @@ export default function MarketplacePage() {
     fetchListings();
   }, [fetchListings]);
 
-  // Handle sorting logic
   const sortedListings = [...listings].sort((a, b) => {
     switch (sortOrder) {
       case 'price-asc':
@@ -46,8 +42,7 @@ export default function MarketplacePage() {
         return b.price - a.price;
       case 'createdAt-desc':
       default:
-        // Compare dates by converting them to numbers
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
   });
 
@@ -88,21 +83,25 @@ export default function MarketplacePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {sortedListings.map((listing) => (
             <div
-              key={listing._id.toString()}
+              key={listing.id}
               className="bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col transition-transform duration-300 hover:scale-105 hover:shadow-purple-500/20"
             >
               <img
-                src={listing.imageUrl || listing.card.images?.small || ''}
-                alt={listing.card.name}
+                src={listing.image_urls?.[0] || '/placeholder.png'}
+                alt={listing.card_name}
                 className="w-full h-auto object-cover aspect-[3/4]"
               />
               <div className="p-4 flex flex-col flex-grow">
-                <h3 className="text-lg font-bold text-white truncate flex-grow">{listing.card.name}</h3>
-                <p className="text-sm text-gray-400">{listing.card.rarity}</p>
+                <h3 className="text-lg font-bold text-white truncate flex-grow">{listing.card_name}</h3>
+                <p className="text-sm text-gray-400">
+                  {listing.listing_type === 'graded' 
+                    ? `Graded: ${listing.graded_company} ${listing.graded_grade}` 
+                    : 'Raw'
+                  }
+                </p>
                 <p className="text-2xl font-black text-green-400 my-2">${listing.price.toFixed(2)}</p>
                 <div className="text-xs text-gray-300 mt-auto">
-                  <p>Condition: <span className="font-semibold">{listing.condition}</span></p>
-                  <p>Seller: <span className="font-semibold text-purple-300">{listing.seller.username}</span></p>
+                  <p>Seller: <span className="font-semibold text-purple-300">{listing.seller_info?.username || 'Unknown'}</span></p>
                 </div>
               </div>
             </div>

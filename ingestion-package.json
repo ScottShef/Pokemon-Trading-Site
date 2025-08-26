@@ -1,0 +1,21 @@
+{
+  "name": "pokemon-data-ingestion",
+  "version": "1.0.0",
+  "description": "Data ingestion program for Pokemon Trading Site",
+  "main": "pokemon-data-ingestion.ts",
+  "scripts": {
+    "start": "ts-node pokemon-data-ingestion.ts",
+    "build": "tsc pokemon-data-ingestion.ts",
+    "ingest": "ts-node pokemon-data-ingestion.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.4.3",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

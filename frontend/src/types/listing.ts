@@ -1,17 +1,18 @@
-import { ObjectId } from "mongodb";
 import { UserProfile } from "./user";
-import { IPokemonCard } from "./pokemon";
 
-// Defines the structure of a single listing document in the database
+// Defines the structure of a single listing document in PlanetScale MySQL
 export interface IListing {
-  _id: ObjectId;
-  card: IPokemonCard; // Embed the full card data
-  seller: UserProfile; // Embed seller's public profile
-  price: number;
-  condition: "Mint" | "Near Mint" | "Excellent" | "Good" | "Played" | "Poor";
+  id: string; // MySQL UUID
+  card_name: string;
   description?: string;
-  imageUrl?: string; // Optional image of the actual card
-  createdAt: Date;
-  updatedAt: Date;
-  status: "Available" | "Sold" | "Delisted";
+  price: number;
+  image_urls?: string[]; // JSON array in MySQL
+  seller_id: string; // Foreign key to users.id
+  seller_info?: UserProfile; // This will be populated by JOIN queries
+  listing_type: "raw" | "graded";
+  graded_company?: string;
+  graded_grade?: string;
+  created_at: string; // MySQL TIMESTAMP
+  updated_at: string; // MySQL TIMESTAMP
 }
+

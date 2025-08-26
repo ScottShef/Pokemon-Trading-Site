@@ -4,15 +4,18 @@
  * and backend API routes, to ensure data consistency.
  */
 
-// The IUser interface represents the full User document as it is stored in MongoDB.
+// The IUser interface represents the full User document as it is stored in PlanetScale MySQL.
 // It includes sensitive data like the password hash.
 // This interface should primarily be used in backend (server-side) logic.
 export interface IUser {
-  _id: { $oid: string }; // MongoDB Object ID
+  id: string; // MySQL UUID
   username: string;
   email: string;
-  password: string; // This will be the hashed password
-  createdAt: { $date: string }; // MongoDB Date format
+  password: string;
+  reputation?: number;
+  review_count?: number;
+  created_at: string; // MySQL TIMESTAMP
+  updated_at: string; // MySQL TIMESTAMP
 }
 
 // The UserProfile interface represents a "safe" version of the user object
@@ -21,5 +24,7 @@ export interface UserProfile {
   id: string;
   username: string;
   email?: string; // Email is optional on a public profile
+  reputation?: number;
+  review_count?: number;
 }
 

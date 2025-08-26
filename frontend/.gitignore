@@ -43,3 +43,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Cloudflare deployment files
+.wrangler/
+functions/
+.cloudflare/
+
+# Temporary scripts and migration files
+check-prices.js
+recalculate-prices.js
+migrate-*.js
+deploy.js
+
+# Cloudflare config examples
+.env.production.example
+.gitignore.cloudflare
+CLOUDFLARE_MIGRATION.md

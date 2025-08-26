@@ -133,7 +133,7 @@ export default function HomePage() {
           <select
             value={sortOrder}
             onChange={handleSortChange}
-            className="w-28 px-2 py-1 rounded-md text-gray-800 bg-gray-100 text-sm"
+            className="w-40 px-2 py-1 rounded-md text-gray-800 bg-gray-100 text-sm"
           >
             <option value="price-desc">Price: High → Low</option>
             <option value="price-asc">Price: Low → High</option>

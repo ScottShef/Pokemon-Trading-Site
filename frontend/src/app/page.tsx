@@ -107,38 +107,39 @@ export default function HomePage() {
 
   return (
     <main
-      className="px-6 sm:px-12 lg:px-24 py-6 min-h-screen"
+      className="px-6 sm:px-12 lg:px-24 pt-20 min-h-screen"
       style={{ backgroundColor: "#343541", color: "#ECECF1" }}
     >
       <Header />
 
       {/* Banner */}
-      <div className="text-center mb-4">
-        <h2 className="text-2xl font-bold">Pokemon Card Collection</h2>
-        <p className="text-gray-400 text-sm">
+      <div className="text-center mb-2">
+        <h2 className="text-xl font-bold">Pokemon Card Collection</h2>
+        <p className="text-gray-400 text-xs">
           Browse and search through {totalCards.toLocaleString()} Pokemon cards from our database
         </p>
       </div>
 
       {/* Search + Sort */}
-      <div className="mb-6 flex flex-col gap-4 items-center">
-        <div className="flex gap-3 w-full max-w-2xl">
+      <div className="mb-4 flex flex-col gap-2 items-center">
+        <div className="flex gap-2 w-full max-w-4xl mx-auto justify-center">
           <input
             type="text"
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="Search cards by name, set, or number..."
-            className="flex-1 px-3 py-2 rounded-md text-gray-800 bg-gray-100"
+            className="flex-1 min-w-[400px] px-4 py-1 rounded-md text-gray-800 bg-gray-100 text-sm text-center"
           />
           <select
             value={sortOrder}
             onChange={handleSortChange}
-            className="w-52 px-2 py-2 rounded-md text-gray-800 bg-gray-100"
+            className="w-28 px-2 py-1 rounded-md text-gray-800 bg-gray-100 text-sm"
           >
             <option value="price-desc">Price: High → Low</option>
             <option value="price-asc">Price: Low → High</option>
             <option value="name">Name: A → Z</option>
           </select>
+          <button onClick={() => router.push("/marketplace")} className="px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition text-sm">Marketplace</button>
         </div>
       </div>
 

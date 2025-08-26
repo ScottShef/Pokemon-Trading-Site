@@ -31,28 +31,42 @@ export default function Header() {
   };
 
   return (
-    <header className="flex justify-between items-center mb-6">
-      <h1 className="text-3xl font-bold cursor-pointer" onClick={() => router.push('/')}>Trainer Exchange</h1>
-      <nav className="flex items-center space-x-4">
-        {/* Navigation Links */}
-        <a href="/" className={`px-3 py-2 rounded-md text-sm font-medium ${pathname === '/' ? 'text-white' : 'text-gray-300 hover:text-white'}`}>Pricing Database</a>
-        <a href="/marketplace" className={`px-3 py-2 rounded-md text-sm font-medium ${pathname === '/marketplace' ? 'text-white' : 'text-gray-300 hover:text-white'}`}>Marketplace</a>
-
-        {/* Authentication Buttons */}
-        <div className="flex items-center space-x-2">
-          {!user ? (
-            <>
-              <button onClick={() => router.push("/register")} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">Register</button>
-              <button onClick={() => router.push("/login")} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">Login</button>
-            </>
-          ) : (
-            <>
-              <span className="px-4 py-2 bg-gray-700 text-white rounded cursor-pointer" onClick={() => router.push("/profile")}>{user.username}</span>
-              <button onClick={handleSignOut} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Sign Out</button>
-            </>
-          )}
+    <header className="fixed top-0 left-0 right-0 z-30 pointer-events-none">
+      {/* Logo positioned with center at the red X location */}
+      <div className="absolute pointer-events-auto" style={{ top: '70px', left: '170px' }}>
+        <div 
+          className="relative cursor-pointer overflow-hidden h-64 w-64" 
+          onClick={() => router.push('/')}
+          style={{ 
+            transform: 'translate(-50%, -50%)',
+            marginRight: '-60px'
+          }}
+        > 
+          <img 
+            src="/holo_hub_logo.png" 
+            alt="HOLO HUB Logo" 
+            className="h-full w-full object-contain hover:scale-105 transition-transform duration-200" 
+            style={{ 
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+            }} 
+          />
         </div>
-      </nav>
+      </div>
+      
+      {/* Navigation buttons in top-right */}
+      <div className="absolute top-4 right-6 flex items-center space-x-2 pointer-events-auto">
+        {!user ? (
+          <>
+            <button onClick={() => router.push("/register")} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition shadow-lg">Register</button>
+            <button onClick={() => router.push("/login")} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition shadow-lg">Login</button>
+          </>
+        ) : (
+          <>
+            <span className="px-4 py-2 bg-gray-700 text-white rounded cursor-pointer hover:bg-gray-600 transition shadow-lg" onClick={() => router.push("/profile")}>{user.username}</span>
+            <button onClick={handleSignOut} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition shadow-lg">Sign Out</button>
+          </>
+        )}
+      </div>
     </header>
   );
 }

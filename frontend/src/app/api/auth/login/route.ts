@@ -43,22 +43,22 @@ export async function POST(request: NextRequest) {
     // Create JWT token
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const token = await new SignJWT({ 
-      userId: user.id,
-      username: user.username,
-      email: user.email 
+      userId: String(user.id),
+      username: String(user.username),
+      email: String(user.email)
     })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("24h")
       .sign(secret);
 
-    // Return user info (without password) and token
+    // Return user info (without password) and token - convert BigInt values
     const userProfile = {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      reputation: user.reputation,
-      review_count: user.review_count
+      id: String(user.id),
+      username: String(user.username),
+      email: String(user.email),
+      reputation: Number(user.reputation),
+      review_count: Number(user.review_count)
     };
 
     return NextResponse.json({

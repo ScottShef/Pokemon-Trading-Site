@@ -1,0 +1,30 @@
+{
+  "name": "pokemon-trading-site-ingestion",
+  "version": "1.0.0",
+  "description": "Data ingestion suite for Pokemon Trading Site",
+  "main": "pokemon-cards/ingest-cards.ts",
+  "scripts": {
+    "ingest:cards": "ts-node pokemon-cards/ingest-cards.ts",
+    "ingest:cards:dev": "ts-node --env-file=.env pokemon-cards/ingest-cards.ts",
+    "build": "tsc",
+    "build:cards": "tsc pokemon-cards/ingest-cards.ts",
+    "scheduler:start": "ts-node schedulers/main-scheduler.ts",
+    "scheduler:dev": "ts-node --watch schedulers/main-scheduler.ts",
+    "db:status": "ts-node scripts/check-status.ts",
+    "db:cleanup": "ts-node scripts/cleanup-db.ts",
+    "dev": "ts-node --watch pokemon-cards/ingest-cards.ts",
+    "dev:status": "ts-node --watch scripts/check-status.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.4.3",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/node-cron": "^3.0.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

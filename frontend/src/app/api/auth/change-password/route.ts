@@ -1,34 +1,11 @@
 import { NextResponse } from 'next/server';
-import { executeGraphQL } from '@/lib/mongodb';
+import { executeQuery } from '@/lib/turso';
 import bcrypt from 'bcryptjs';
 import { getAuthUser } from '@/lib/auth';
-import { IUser } from '@/types/user';
-
-// GraphQL query to find a user by their ID and get their password
-const GET_USER_PASSWORD_QUERY = `
-  query GetUserForPasswordChange($_id: String!) {
-    users_by_pk(_id: $_id) {
-      _id
-      password
-    }
-  }
-`;
-
-// GraphQL mutation to update a user's password
-const UPDATE_PASSWORD_MUTATION = `
-  mutation UpdateUserPassword($_id: String!, $password: String!, $updatedAt: String!) {
-    update_users_by_pk(
-      pk_columns: { _id: $_id },
-      _set: { password: $password, updatedAt: $updatedAt }
-    ) {
-      _id
-    }
-  }
-`;
 
 /**
  * Handles PUT requests to /api/auth/change-password
- * This endpoint allows an authenticated user to change their password using GraphQL.
+ * This endpoint allows an authenticated user to change their password using Turso database.
  */
 export async function PUT(request: Request) {
   try {
@@ -43,51 +20,48 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Current and new passwords are required' }, { status: 400 });
     }
 
-    // Fetch the user from the database using their ID from the token
-    const { data, errors } = await executeGraphQL<{ users_by_pk: IUser }> (
-        GET_USER_PASSWORD_QUERY,
-        { _id: authUser.id }
-    );
-
-    if (errors) {
-        console.error('Error fetching user for password change:', errors);
-        return NextResponse.json({ error: 'An error occurred.' }, { status: 500 });
+    if (newPassword.length < 6) {
+      return NextResponse.json({ error: 'New password must be at least 6 characters long' }, { status: 400 });
     }
 
-    const user = data?.users_by_pk;
+    // Fetch the user from the database using their ID from the token
+    const userResult = await executeQuery(
+      'SELECT id, password FROM users WHERE id = ?',
+      [authUser.id]
+    );
 
-    if (!user) {
+    if (!userResult.rows || userResult.rows.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const user = userResult.rows[0];
+    const userPassword = user.password as string;
+
+    if (!userPassword) {
+      return NextResponse.json({ error: 'User password not found' }, { status: 404 });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, userPassword);
     if (!isMatch) {
       return NextResponse.json({ error: 'Incorrect current password' }, { status: 400 });
     }
 
+    // Hash the new password
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
     // Update the user's password in the database
-    const { errors: updateErrors } = await executeGraphQL(
-      UPDATE_PASSWORD_MUTATION,
-      {
-        _id: authUser.id,
-        password: hashedNewPassword,
-        updatedAt: new Date().toISOString(),
-      }
+    await executeQuery(
+      'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [hashedNewPassword, authUser.id]
     );
-
-    if (updateErrors) {
-        console.error('Error updating password:', updateErrors);
-        return NextResponse.json({ error: 'Failed to update password.' }, { status: 500 });
-    }
 
     return NextResponse.json({ message: 'Password updated successfully' });
 
   } catch (err: any) {
     console.error('Change Password Error:', err);
     if (err.code === 'ERR_JWT_EXPIRED') {
-        return NextResponse.json({ error: 'Session expired, please log in again.' }, { status: 401 });
+      return NextResponse.json({ error: 'Session expired, please log in again.' }, { status: 401 });
     }
     return NextResponse.json({ error: 'An internal server error occurred' }, { status: 500 });
   }

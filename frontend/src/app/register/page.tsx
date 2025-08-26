@@ -57,8 +57,8 @@ export default function RegisterPage() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      // Redirect to the profile page after successful registration.
-      router.push("/profile");
+      // Redirect to the marketplace page after successful registration.
+      router.push("/marketplace");
     } catch (err) {
       const axiosError = err as AxiosError<{ error: string }>;
       const errorMessage =

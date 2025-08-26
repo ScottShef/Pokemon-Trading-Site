@@ -19,7 +19,7 @@ async function cleanupDatabase() {
     console.log('Removing old price data...');
     await client.execute({
       sql: `DELETE FROM pokemon_card_prices 
-            WHERE created_at < datetime('now', '-30 days')`,
+            WHERE updated_at < datetime('now', '-30 days')`,
       args: []
     });
 

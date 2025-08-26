@@ -29,10 +29,13 @@ export async function POST(request: NextRequest) {
 
     const { 
       card_name, 
+      card_number,
+      set_series,
       description, 
       price, 
       image_urls, 
       listing_type, 
+      condition,
       graded_company, 
       graded_grade 
     } = await request.json();
@@ -52,19 +55,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert new listing
+    // For raw cards, combine listing_type with condition
+    let finalListingType = listing_type;
+    if (listing_type === "raw" && condition) {
+      finalListingType = `Raw - ${condition}`;
+    }
+
+    // Insert new listing with condition field
     const result = await executeQuery(
       `INSERT INTO listings (
-        card_name, description, price, image_urls, seller_id, 
-        listing_type, graded_company, graded_grade
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        card_name, card_number, set_series, description, price, image_urls, seller_id, 
+        listing_type, condition, graded_company, graded_grade
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         card_name,
+        card_number || null,
+        set_series || null,
         description || null,
         price,
         image_urls ? JSON.stringify(image_urls) : null,
         payload.userId,
-        listing_type,
+        finalListingType,
+        condition || null,
         graded_company || null,
         graded_grade || null
       ]
@@ -73,7 +85,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         message: "Listing created successfully",
-        listingId: result.lastInsertRowid
+        listingId: Number(result.lastInsertRowid)
       },
       { status: 201 }
     );
@@ -125,15 +137,18 @@ export async function GET(request: NextRequest) {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    // Get listings with seller info
+    // Get listings with seller info including condition field
     const query = `
       SELECT 
         l.id,
         l.card_name,
+        l.card_number,
+        l.set_series,
         l.description,
         l.price,
         l.image_urls,
         l.listing_type,
+        l.condition,
         l.graded_company,
         l.graded_grade,
         l.created_at,
@@ -145,7 +160,7 @@ export async function GET(request: NextRequest) {
       FROM listings l
       JOIN users u ON l.seller_id = u.id
       ${whereClause}
-      ORDER BY l.created_at DESC
+      ORDER BY l.price DESC
       LIMIT ? OFFSET ?
     `;
 
@@ -153,14 +168,17 @@ export async function GET(request: NextRequest) {
 
     const result = await executeQuery(query, params);
 
-    // Transform the data
+    // Transform the data including condition field
     const listings = result.rows.map((row: any) => ({
       id: row.id,
       card_name: row.card_name,
+      card_number: row.card_number,
+      set_series: row.set_series,
       description: row.description,
       price: row.price,
       image_urls: row.image_urls ? JSON.parse(row.image_urls) : [],
       listing_type: row.listing_type,
+      condition: row.condition,
       graded_company: row.graded_company,
       graded_grade: row.graded_grade,
       created_at: row.created_at,

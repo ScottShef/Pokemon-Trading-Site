@@ -36,33 +36,53 @@ export default function HomePage() {
 
   const [cards, setCards] = useState<PokemonCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("price-desc");
   const [totalCards, setTotalCards] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const fetchCards = useCallback(
-    async (query: string, sort: SortOrder) => {
+    async (query: string, sort: SortOrder, page: number = 1, append: boolean = false) => {
       try {
-        setLoading(true);
+        append ? setLoadingMore(true) : setLoading(true);
+        const offset = (page - 1) * 50;
         const res = await axios.get<{
           data: PokemonCard[];
           total: number;
           page: number;
           hasMore: boolean;
-        }>(`/api/cards?q=${encodeURIComponent(query)}&sort=${sort}&limit=50`);
+        }>(`/api/cards?q=${encodeURIComponent(query)}&sort=${sort}&limit=50&offset=${offset}`);
         
-        setCards(res.data.data);
+        if (append) {
+          setCards(prev => [...prev, ...res.data.data]);
+        } else {
+          setCards(res.data.data);
+          setCurrentPage(1);
+        }
         setTotalCards(res.data.total);
+        setHasMore(res.data.hasMore);
       } catch (err) {
         console.error("Error fetching cards:", err);
-        setCards([]);
-        setTotalCards(0);
+        if (!append) {
+          setCards([]);
+          setTotalCards(0);
+        }
       } finally {
-        setLoading(false);
+        append ? setLoadingMore(false) : setLoading(false);
       }
     },
     []
   );
+
+  const loadMoreCards = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchCards(searchQuery, sortOrder, nextPage, true);
+    }
+  }, [currentPage, hasMore, loadingMore, searchQuery, sortOrder, fetchCards]);
 
   const updateURLParams = useCallback(
     (newParams: Record<string, string>) => {
@@ -84,6 +104,8 @@ export default function HomePage() {
 
     setSearchQuery(cleanQuery);
     setSortOrder(sort);
+    setCurrentPage(1);
+    setHasMore(true);
 
     fetchCards(cleanQuery, sort);
 
@@ -108,14 +130,14 @@ export default function HomePage() {
   return (
     <main
       className="px-6 sm:px-12 lg:px-24 pt-20 min-h-screen"
-      style={{ backgroundColor: "#343541", color: "#ECECF1" }}
+      style={{ backgroundColor: "#1A1A1A", color: "#E5E5E5" }}
     >
       <Header />
 
       {/* Banner */}
       <div className="text-center mb-2">
-        <h2 className="text-xl font-bold">Pokemon Card Collection</h2>
-        <p className="text-gray-400 text-xs">
+        <h2 className="text-xl font-bold text-gray-100">Pokemon Card Collection</h2>
+        <p className="text-gray-500 text-xs">
           Browse and search through {totalCards.toLocaleString()} Pokemon cards from our database
         </p>
       </div>
@@ -128,12 +150,12 @@ export default function HomePage() {
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="Search cards by name, set, or number..."
-            className="flex-1 min-w-[400px] px-4 py-1 rounded-md text-gray-800 bg-gray-100 text-sm text-center"
+            className="flex-1 min-w-[400px] px-4 py-1 rounded-md text-gray-200 bg-gray-800 border border-gray-600 placeholder-gray-400 text-sm text-center focus:outline-none focus:ring-2 focus:ring-gray-500"
           />
           <select
             value={sortOrder}
             onChange={handleSortChange}
-            className="w-40 px-2 py-1 rounded-md text-gray-800 bg-gray-100 text-sm"
+            className="w-40 px-2 py-1 rounded-md text-gray-200 bg-gray-800 border border-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
           >
             <option value="price-desc">Price: High → Low</option>
             <option value="price-asc">Price: Low → High</option>
@@ -146,7 +168,7 @@ export default function HomePage() {
       {/* Loading State */}
       {loading && (
         <div className="text-center py-8">
-          <p className="text-gray-400">Loading cards...</p>
+          <p className="text-gray-500">Loading cards...</p>
         </div>
       )}
 
@@ -171,10 +193,10 @@ export default function HomePage() {
               <div
                 key={card._id}
                 onClick={() => router.push(`/cards/${card._id}`)}
-                className="p-2 rounded-xl transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl bg-[#4B4B5A] flex flex-col items-center cursor-pointer h-[450px] w-[240px]"
+                className="p-2 rounded-xl transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl bg-[#2A2A2A] border border-gray-700 flex flex-col items-center cursor-pointer h-[450px] w-[240px]"
               >
                 {/* Card Image */}
-                <div className="w-[230px] h-[290px] flex items-center justify-center bg-[#2F2F3A] rounded-lg overflow-hidden">
+                <div className="w-[230px] h-[290px] flex items-center justify-center bg-[#1F1F1F] border border-gray-600 rounded-lg overflow-hidden">
                   <img
                     src={card.images?.small || "/placeholder.svg"}
                     alt={card.name}
@@ -190,31 +212,31 @@ export default function HomePage() {
                 <div className="text-center w-full mt-2 space-y-1 flex-1 flex flex-col justify-between">
                   <div>
                     <p
-                      className="font-semibold text-base text-white break-words whitespace-normal leading-tight line-clamp-2"
+                      className="font-semibold text-base text-gray-100 break-words whitespace-normal leading-tight line-clamp-2"
                       title={card.name}
                     >
                       {card.name} {card.number ? `#${card.number}` : ""}
                     </p>
                     <p
-                      className="text-sm text-gray-300 break-words whitespace-normal"
+                      className="text-sm text-gray-400 break-words whitespace-normal"
                       title={card.set?.name || ""}
                     >
                       {card.set?.name || "Unknown Set"}
                     </p>
                     {card.set?.series && (
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-500">
                         {card.set.series}
                       </p>
                     )}
                     {card.rarity && (
-                      <p className="text-xs text-blue-300">
+                      <p className="text-xs text-blue-400">
                         {card.rarity}
                       </p>
                     )}
                   </div>
                   
                   {priceSegments.length > 0 && (
-                    <p className="font-bold text-green-400 text-sm">
+                    <p className="font-bold text-green-500 text-sm">
                       {priceSegments.join(" | ")}
                     </p>
                   )}
@@ -225,10 +247,32 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Load More Button */}
+      {!loading && cards.length > 0 && hasMore && (
+        <div className="text-center py-8">
+          <button
+            onClick={loadMoreCards}
+            disabled={loadingMore}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+          >
+            {loadingMore ? "Loading..." : "Load More Cards"}
+          </button>
+        </div>
+      )}
+
+      {/* Cards Count Info */}
+      {!loading && cards.length > 0 && (
+        <div className="text-center py-4">
+          <p className="text-gray-400 text-sm">
+            Showing {cards.length.toLocaleString()} of {totalCards.toLocaleString()} cards
+          </p>
+        </div>
+      )}
+
       {/* Empty State */}
       {!loading && cards.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-400">
+          <p className="text-gray-500">
             {searchQuery ? `No cards found for "${searchQuery}"` : "No cards available"}
           </p>
         </div>

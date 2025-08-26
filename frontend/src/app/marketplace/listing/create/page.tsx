@@ -41,6 +41,12 @@ export default function CreateListingPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Don't search if a card is already selected
+    if (selectedCard) {
+      setSearchResults([]);
+      return;
+    }
+
     if (searchQuery.trim().length < 3) {
       setSearchResults([]);
       return;
@@ -60,7 +66,7 @@ export default function CreateListingPage() {
 
     fetchDebounced();
     return () => fetchDebounced.cancel();
-  }, [searchQuery]);
+  }, [searchQuery, selectedCard]);
 
   const handleSelectCard = (card: ICardSearchResult) => {
     setSelectedCard(card);
@@ -145,6 +151,8 @@ export default function CreateListingPage() {
 
       const listingData = {
         card_name: selectedCard.name,
+        card_number: selectedCard.number,
+        set_series: selectedCard.set?.name, // Using set name as series since that's what's available
         description,
         price: parseFloat(price),
         listing_type: listingType,
@@ -187,12 +195,12 @@ export default function CreateListingPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Start typing a card name..."
+              placeholder={selectedCard ? selectedCard.name : "Start typing a card name..."}
               disabled={!!selectedCard}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-600 disabled:text-gray-300"
             />
             {isSearching && <p className="text-sm text-gray-400 mt-1">Searching...</p>}
-            {searchResults.length > 0 && (
+            {searchResults.length > 0 && !selectedCard && (
               <ul className="absolute z-10 w-full bg-gray-700 border border-gray-600 rounded-md mt-1 max-h-60 overflow-y-auto">
                 {searchResults.map(card => (
                   <li
@@ -220,7 +228,11 @@ export default function CreateListingPage() {
                   <p className="text-xs text-gray-300">{selectedCard.set?.name}</p>
                 </div>
               </div>
-              <button type="button" onClick={() => { setSelectedCard(null); setSearchQuery(''); }} className="text-red-400 hover:text-red-300 font-semibold text-sm">Change</button>
+              <button type="button" onClick={() => { 
+                setSelectedCard(null); 
+                setSearchQuery(''); 
+                setSearchResults([]);
+              }} className="text-red-400 hover:text-red-300 font-semibold text-sm">Change</button>
             </div>
           )}
 

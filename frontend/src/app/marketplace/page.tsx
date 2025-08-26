@@ -43,9 +43,24 @@ export default function MarketplacePage() {
     if (!searchQuery.trim()) {
       setFilteredListings(listings);
     } else {
+      const query = searchQuery.toLowerCase();
       const filtered = listings.filter(listing =>
-        listing.card_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (listing.seller_info?.username && listing.seller_info.username.toLowerCase().includes(searchQuery.toLowerCase()))
+        // Search in card name
+        listing.card_name.toLowerCase().includes(query) ||
+        // Search in seller username
+        (listing.seller_info?.username && listing.seller_info.username.toLowerCase().includes(query)) ||
+        // Search in set series
+        (listing.set_series && listing.set_series.toLowerCase().includes(query)) ||
+        // Search in card number
+        (listing.card_number && listing.card_number.toLowerCase().includes(query)) ||
+        // Search in condition (for both raw and graded)
+        (listing.condition && listing.condition.toLowerCase().includes(query)) ||
+        // Search in listing type (includes condition for raw cards like "Raw - Near Mint")
+        (listing.listing_type && listing.listing_type.toLowerCase().includes(query)) ||
+        // Search in graded company
+        (listing.graded_company && listing.graded_company.toLowerCase().includes(query)) ||
+        // Search in graded grade
+        (listing.graded_grade && listing.graded_grade.toLowerCase().includes(query))
       );
       setFilteredListings(filtered);
     }
@@ -66,14 +81,14 @@ export default function MarketplacePage() {
   return (
     <main 
       className="px-6 sm:px-12 lg:px-24 pt-20 min-h-screen"
-      style={{ backgroundColor: "#343541", color: "#ECECF1" }}
+      style={{ backgroundColor: "#2B2B35", color: "#F0F0F0" }}
     >
       <Header />
 
       {/* Banner */}
       <div className="text-center mb-2">
-        <h2 className="text-xl font-bold">Pokemon Card Marketplace</h2>
-        <p className="text-gray-400 text-xs">
+        <h2 className="text-xl font-bold text-white">Pokemon Card Marketplace</h2>
+        <p className="text-gray-300 text-xs">
           Buy and sell Pokemon cards with other collectors
         </p>
       </div>
@@ -85,13 +100,13 @@ export default function MarketplacePage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search listings by card name or seller..."
-            className="flex-1 min-w-[400px] px-4 py-1 rounded-md text-gray-800 bg-gray-100 text-sm text-center"
+            placeholder="Search by card name, set, number, condition, seller..."
+            className="flex-1 min-w-[400px] px-4 py-1 rounded-md text-gray-200 bg-gray-700 border border-gray-500 placeholder-gray-400 text-sm text-center focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-            className="w-40 px-2 py-1 rounded-md text-gray-800 bg-gray-100 text-sm"
+            className="w-40 px-2 py-1 rounded-md text-gray-200 bg-gray-700 border border-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="createdAt-desc">Newest</option>
             <option value="price-desc">Price: High → Low</option>
@@ -112,7 +127,7 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      {loading && <p className="text-center text-gray-400">Loading listings...</p>}
+      {loading && <p className="text-center text-gray-300">Loading listings...</p>}
       {error && <p className="text-center text-red-400">{error}</p>}
       
       {!loading && !error && (
@@ -120,9 +135,9 @@ export default function MarketplacePage() {
           {sortedListings.map((listing) => (
             <div
               key={listing.id}
-              className="p-2 rounded-xl transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl bg-[#4B4B5A] flex flex-col items-center cursor-pointer h-[450px] w-[240px]"
+              className="p-2 rounded-xl transition-transform duration-200 transform hover:scale-105 hover:shadow-2xl bg-[#3A3A45] flex flex-col items-center cursor-pointer h-[480px] w-[240px]"
             >
-              <div className="w-[230px] h-[290px] flex items-center justify-center bg-[#2F2F3A] rounded-lg overflow-hidden">
+              <div className="w-[230px] h-[290px] flex items-center justify-center bg-[#252530] rounded-lg overflow-hidden">
                 <img
                   src={listing.image_urls?.[0] || '/placeholder.svg'}
                   alt={listing.card_name}
@@ -133,26 +148,39 @@ export default function MarketplacePage() {
                   }}
                 />
               </div>
-              <div className="text-center w-full mt-2 space-y-1 flex-1 flex flex-col justify-between">
-                <div>
+              <div className="text-center w-full mt-2 flex-1 flex flex-col justify-between">
+                <div className="space-y-1">
                   <p
                     className="font-semibold text-base text-white break-words whitespace-normal leading-tight line-clamp-2"
                     title={listing.card_name}
                   >
                     {listing.card_name}
                   </p>
+                  {(listing.card_number || listing.set_series) && (
+                    <p className="text-xs text-gray-400">
+                      {listing.set_series && listing.card_number 
+                        ? `${listing.set_series} #${listing.card_number}`
+                        : listing.set_series || `#${listing.card_number}`
+                      }
+                    </p>
+                  )}
                   <p className="text-sm text-gray-300">
-                    {listing.listing_type === 'graded' 
+                    {listing.listing_type === 'graded' || listing.graded_company
                       ? `Graded: ${listing.graded_company} ${listing.graded_grade}` 
-                      : 'Raw'
+                      : listing.listing_type
                     }
                   </p>
-                  <p className="text-xs text-purple-300">
-                    Seller: {listing.seller_info?.username || 'Unknown'}
-                  </p>
+                  <div className="text-xs text-purple-300">
+                    <p>Seller: {listing.seller_info?.username || 'Unknown'}</p>
+                    {listing.seller_info && (
+                      <p className="text-xs text-gray-400">
+                        {listing.seller_info.reputation}% - {listing.seller_info.review_count} reviews
+                      </p>
+                    )}
+                  </div>
                 </div>
                 
-                <p className="font-bold text-green-400 text-lg">
+                <p className="font-bold text-green-400 text-lg mt-2">
                   ${listing.price.toFixed(2)}
                 </p>
               </div>
@@ -164,7 +192,7 @@ export default function MarketplacePage() {
       {/* Empty State */}
       {!loading && !error && sortedListings.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-400">
+          <p className="text-gray-300">
             {searchQuery ? `No listings found for "${searchQuery}"` : "No listings available"}
           </p>
         </div>

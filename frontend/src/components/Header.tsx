@@ -35,8 +35,7 @@ export default function Header() {
       {/* Logo positioned with center at the red X location */}
       <div className="absolute pointer-events-auto" style={{ top: '70px', left: '170px' }}>
         <div 
-          className="relative cursor-pointer overflow-hidden h-64 w-64" 
-          onClick={() => router.push('/')}
+          className="relative overflow-hidden h-64 w-64" 
           style={{ 
             transform: 'translate(-50%, -50%)',
             marginRight: '-60px'
@@ -45,7 +44,7 @@ export default function Header() {
           <img 
             src="/holo_hub_logo.png" 
             alt="HOLO HUB Logo" 
-            className="h-full w-full object-contain hover:scale-105 transition-transform duration-200" 
+            className="h-full w-full object-contain" 
             style={{ 
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
             }} 

@@ -1,0 +1,24 @@
+# Cloudflare deployment files
+.vercel/
+.wrangler/
+functions/
+
+# Environment files
+.env.production
+.env.staging
+
+# Cloudflare build output
+.cloudflare/
+
+# Wrangler state
+.wrangler/
+dist/
+worker.js
+
+# OpenNext build files
+.open-next/
+
+# Additional Cloudflare specific ignores
+_worker.js
+_worker.bundle
+.vercel/output/

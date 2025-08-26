@@ -1,0 +1,42 @@
+# Cloudflare Workers configuration for Pokemon Trading Site
+name = "pokemon-trading-site"
+compatibility_date = "2025-08-26"
+pages_build_output_dir = ".vercel/output/static"
+
+# Environment variables for production
+[env.production]
+name = "pokemon-trading-site-prod"
+
+# Environment variables for staging  
+[env.staging]
+name = "pokemon-trading-site-staging"
+
+# Bindings for Turso database
+[[env.production.vars]]
+TURSO_DATABASE_URL = ""  # Add your production Turso URL
+TURSO_AUTH_TOKEN = ""    # Add your production Turso token
+
+[[env.staging.vars]]
+TURSO_DATABASE_URL = ""  # Add your staging Turso URL  
+TURSO_AUTH_TOKEN = ""    # Add your staging Turso token
+
+# Development environment
+[env.development]
+name = "pokemon-trading-site-dev"
+
+# Add your development Turso credentials
+[[env.development.vars]]
+TURSO_DATABASE_URL = ""
+TURSO_AUTH_TOKEN = ""
+
+# Optional: KV storage for caching (upgrade from free plan if needed)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
+
+# Optional: R2 storage for user uploads (instead of local /public/uploads)
+# [[r2_buckets]]
+# binding = "UPLOADS"
+# bucket_name = "pokemon-card-uploads"
+# preview_bucket_name = "pokemon-card-uploads-preview"
